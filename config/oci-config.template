@@ -1,0 +1,6 @@
+[DEFAULT]
+user=${OCI_USER_OCID}
+fingerprint=${OCI_FINGERPRINT}
+tenancy=${OCI_TENANCY_OCID}
+region=${OCI_REGION}
+key_file=${OCI_PRIVATE_KEY_PATH}
