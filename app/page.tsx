@@ -99,10 +99,51 @@ const UserIcon = () => (
   </svg>
 );
 
+const RepoIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
+    <path d="M9 18c-4.51 2-5-2-7-2"/>
+  </svg>
+);
+
+const BranchIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="6" y1="3" x2="6" y2="15"/>
+    <circle cx="18" cy="6" r="3"/>
+    <circle cx="6" cy="18" r="3"/>
+    <path d="M18 9a9 9 0 0 1-9 9"/>
+  </svg>
+);
+
+const ChevronDownIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m6 9 6 6 6-6"/>
+  </svg>
+);
+
+const XIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6 6 18"/>
+    <path d="m6 6 12 12"/>
+  </svg>
+);
+
 interface GitHubUser {
   login: string;
   name: string;
   avatar: string;
+}
+
+interface Repo {
+  id: number;
+  name: string;
+  fullName: string;
+  defaultBranch: string;
+}
+
+interface Branch {
+  name: string;
+  protected: boolean;
 }
 
 export default function Home() {
@@ -114,10 +155,21 @@ export default function Home() {
   const [serverStatus, setServerStatus] = useState<'ok' | 'error'>('ok');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [githubUser, setGithubUser] = useState<GitHubUser | null>(null);
+  const [repos, setRepos] = useState<Repo[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+  const [repoDropdownOpen, setRepoDropdownOpen] = useState(false);
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const [loadingBranches, setLoadingBranches] = useState(false);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
+  const [settingUpWorkspace, setSettingUpWorkspace] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const currentAssistantMessageRef = useRef<string>('');
+  const repoDropdownRef = useRef<HTMLDivElement>(null);
+  const branchDropdownRef = useRef<HTMLDivElement>(null);
 
   // Initialize session on mount
   useEffect(() => {
@@ -144,11 +196,95 @@ export default function Home() {
       const data = await response.json();
       if (data.authenticated) {
         setGithubUser(data.user);
+        loadRepos();
       }
     } catch (error) {
       console.error('Failed to check GitHub auth:', error);
     }
   }
+
+  async function loadRepos() {
+    try {
+      const response = await fetch('/api/github/repos');
+      const data = await response.json();
+      if (data.repos) {
+        setRepos(data.repos);
+      }
+    } catch (error) {
+      console.error('Failed to load repos:', error);
+    }
+  }
+
+  async function loadBranches(repoFullName: string) {
+    setLoadingBranches(true);
+    setBranches([]);
+    try {
+      const response = await fetch(`/api/github/branches?repo=${encodeURIComponent(repoFullName)}`);
+      const data = await response.json();
+      if (data.branches) {
+        setBranches(data.branches);
+      }
+    } catch (error) {
+      console.error('Failed to load branches:', error);
+    } finally {
+      setLoadingBranches(false);
+    }
+  }
+
+  async function handleSelectRepo(repo: Repo) {
+    setSelectedRepo(repo);
+    setSelectedBranch(repo.defaultBranch);
+    setRepoDropdownOpen(false);
+    setWorkspaceReady(false);
+    await loadBranches(repo.fullName);
+    await setupWorkspace(repo.fullName);
+  }
+
+  async function setupWorkspace(repoFullName: string) {
+    setSettingUpWorkspace(true);
+    try {
+      const response = await fetch('/api/workspace/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoFullName }),
+      });
+      const data = await response.json();
+      if (!data.error) {
+        setWorkspaceReady(true);
+      }
+    } catch (error) {
+      console.error('Failed to setup workspace:', error);
+    } finally {
+      setSettingUpWorkspace(false);
+    }
+  }
+
+  function handleSelectBranch(branchName: string) {
+    setSelectedBranch(branchName);
+    setBranchDropdownOpen(false);
+  }
+
+  function clearWorkspace() {
+    setSelectedRepo(null);
+    setSelectedBranch(null);
+    setBranches([]);
+    setWorkspaceReady(false);
+  }
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (repoDropdownRef.current && !repoDropdownRef.current.contains(event.target as Node)) {
+        setRepoDropdownOpen(false);
+      }
+      if (branchDropdownRef.current && !branchDropdownRef.current.contains(event.target as Node)) {
+        setBranchDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -248,10 +384,16 @@ export default function Home() {
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      const response = await fetch('/api/chat', {
+      // Use workspace chat if a repo is selected and ready
+      const endpoint = selectedRepo && workspaceReady ? '/api/workspace/chat' : '/api/chat';
+      const body = selectedRepo && workspaceReady
+        ? { message, sessionId, repoFullName: selectedRepo.fullName, branch: selectedBranch }
+        : { message, sessionId };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, sessionId }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -550,6 +692,97 @@ export default function Home() {
               </button>
             </div>
             <div className="input-footer">
+              {githubUser && (
+                <div className="workspace-selector">
+                  {/* Repo Selector */}
+                  <div className="selector-dropdown" ref={repoDropdownRef}>
+                    <button
+                      type="button"
+                      className={`selector-trigger ${selectedRepo ? 'active' : ''}`}
+                      onClick={() => setRepoDropdownOpen(!repoDropdownOpen)}
+                    >
+                      <RepoIcon />
+                      <span>{selectedRepo ? selectedRepo.name : 'Select repo'}</span>
+                      <ChevronDownIcon />
+                    </button>
+                    {repoDropdownOpen && (
+                      <div className="selector-menu">
+                        <div className="selector-menu-header">Your Repositories</div>
+                        <div className="selector-menu-list">
+                          {repos.map((repo) => (
+                            <button
+                              key={repo.id}
+                              type="button"
+                              className={`selector-menu-item ${selectedRepo?.id === repo.id ? 'selected' : ''}`}
+                              onClick={() => handleSelectRepo(repo)}
+                            >
+                              <RepoIcon />
+                              <span>{repo.name}</span>
+                            </button>
+                          ))}
+                          {repos.length === 0 && (
+                            <div className="selector-menu-empty">No repositories found</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Branch Selector */}
+                  {selectedRepo && (
+                    <div className="selector-dropdown" ref={branchDropdownRef}>
+                      <button
+                        type="button"
+                        className={`selector-trigger ${selectedBranch ? 'active' : ''}`}
+                        onClick={() => setBranchDropdownOpen(!branchDropdownOpen)}
+                        disabled={loadingBranches}
+                      >
+                        <BranchIcon />
+                        <span>{loadingBranches ? 'Loading...' : selectedBranch || 'Select branch'}</span>
+                        <ChevronDownIcon />
+                      </button>
+                      {branchDropdownOpen && !loadingBranches && (
+                        <div className="selector-menu">
+                          <div className="selector-menu-header">Branches</div>
+                          <div className="selector-menu-list">
+                            {branches.map((branch) => (
+                              <button
+                                key={branch.name}
+                                type="button"
+                                className={`selector-menu-item ${selectedBranch === branch.name ? 'selected' : ''}`}
+                                onClick={() => handleSelectBranch(branch.name)}
+                              >
+                                <BranchIcon />
+                                <span>{branch.name}</span>
+                                {branch.protected && <span className="branch-protected">protected</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Clear workspace button */}
+                  {selectedRepo && (
+                    <button
+                      type="button"
+                      className="selector-clear"
+                      onClick={clearWorkspace}
+                      title="Clear workspace"
+                    >
+                      <XIcon />
+                    </button>
+                  )}
+
+                  {/* Workspace status */}
+                  {selectedRepo && (
+                    <div className={`workspace-status ${workspaceReady ? 'ready' : settingUpWorkspace ? 'loading' : ''}`}>
+                      {settingUpWorkspace ? 'Setting up...' : workspaceReady ? 'Ready' : ''}
+                    </div>
+                  )}
+                </div>
+              )}
               <span className="input-hint">Press Enter to send, Shift+Enter for new line</span>
             </div>
           </form>

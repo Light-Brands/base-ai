@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Repo {
   id: number;
@@ -21,22 +22,108 @@ interface User {
   avatar: string;
 }
 
+// Language colors matching GitHub
+const languageColors: Record<string, string> = {
+  TypeScript: '#3178c6',
+  JavaScript: '#f1e05a',
+  Python: '#3572A5',
+  Rust: '#dea584',
+  Go: '#00ADD8',
+  Java: '#b07219',
+  Ruby: '#701516',
+  PHP: '#4F5D95',
+  CSS: '#563d7c',
+  HTML: '#e34c26',
+  Swift: '#F05138',
+  Kotlin: '#A97BFF',
+  C: '#555555',
+  'C++': '#f34b7d',
+  'C#': '#239120',
+  Shell: '#89e051',
+  Vue: '#41b883',
+  Svelte: '#ff3e00',
+};
+
+const LightningIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+  </svg>
+);
+
+const RepoIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
+    <path d="M9 18c-4.51 2-5-2-7-2"/>
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+);
+
+const ArrowRightIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14"/>
+    <path d="m12 5 7 7-7 7"/>
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/>
+    <path d="m21 21-4.3-4.3"/>
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16 17 21 12 16 7"/>
+    <line x1="21" x2="9" y1="12" y2="12"/>
+  </svg>
+);
+
+const HomeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    <polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+);
+
 export default function ReposPage() {
   const router = useRouter();
   const [repos, setRepos] = useState<Repo[]>([]);
+  const [filteredRepos, setFilteredRepos] = useState<Repo[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
   const [cloning, setCloning] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     checkAuthAndLoadRepos();
   }, []);
 
+  useEffect(() => {
+    if (searchQuery) {
+      setFilteredRepos(
+        repos.filter(
+          (repo) =>
+            repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            repo.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredRepos(repos);
+    }
+  }, [searchQuery, repos]);
+
   async function checkAuthAndLoadRepos() {
     try {
-      // Check auth status
       const authRes = await fetch('/api/auth/status');
       const authData = await authRes.json();
 
@@ -47,7 +134,6 @@ export default function ReposPage() {
 
       setUser(authData.user);
 
-      // Load repos
       const reposRes = await fetch('/api/github/repos');
       const reposData = await reposRes.json();
 
@@ -55,6 +141,7 @@ export default function ReposPage() {
         setError(reposData.error);
       } else {
         setRepos(reposData.repos);
+        setFilteredRepos(reposData.repos);
       }
     } catch (err) {
       setError('Failed to load repositories');
@@ -68,7 +155,6 @@ export default function ReposPage() {
     setCloning(true);
 
     try {
-      // Clone/setup repo on backend
       const response = await fetch('/api/workspace/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,14 +166,15 @@ export default function ReposPage() {
       if (data.error) {
         setError(data.error);
         setCloning(false);
+        setSelectedRepo(null);
         return;
       }
 
-      // Redirect to workspace chat
       router.push(`/workspace/${encodeURIComponent(repo.fullName)}`);
     } catch (err) {
       setError('Failed to setup workspace');
       setCloning(false);
+      setSelectedRepo(null);
     }
   }
 
@@ -96,33 +183,60 @@ export default function ReposPage() {
     router.push('/');
   }
 
+  function formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return date.toLocaleDateString();
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading repositories...</div>
+      <div className="repos-page">
+        <div className="repos-loading">
+          <div className="repos-loading-spinner"></div>
+          <p>Loading your repositories...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="repos-page">
+      {/* Ambient background */}
+      <div className="repos-ambient"></div>
+
       {/* Header */}
-      <header className="border-b border-gray-800 p-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-400">Lawless AI</h1>
+      <header className="repos-header">
+        <div className="repos-header-content">
+          <div className="repos-header-left">
+            <Link href="/" className="repos-logo">
+              <div className="repos-logo-icon">
+                <LightningIcon />
+              </div>
+              <span className="repos-logo-text">Lawless AI</span>
+            </Link>
+          </div>
+
           {user && (
-            <div className="flex items-center gap-4">
-              <img
-                src={user.avatar}
-                alt={user.login}
-                className="w-8 h-8 rounded-full"
-              />
-              <span className="text-gray-300">{user.login}</span>
-              <button
-                onClick={handleLogout}
-                className="text-gray-400 hover:text-white text-sm"
-              >
-                Logout
+            <div className="repos-header-right">
+              <Link href="/" className="repos-nav-btn">
+                <HomeIcon />
+                <span>Chat</span>
+              </Link>
+              <div className="repos-user">
+                <img src={user.avatar} alt={user.login} className="repos-avatar" />
+                <span className="repos-username">{user.login}</span>
+              </div>
+              <button onClick={handleLogout} className="repos-logout-btn">
+                <LogoutIcon />
               </button>
             </div>
           )}
@@ -130,63 +244,107 @@ export default function ReposPage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-6xl mx-auto p-6">
-        <h2 className="text-xl font-semibold mb-6">Select a Repository</h2>
+      <main className="repos-main">
+        {/* Hero section */}
+        <div className="repos-hero">
+          <div className="repos-hero-icon">
+            <RepoIcon />
+          </div>
+          <h1>Your Repositories</h1>
+          <p>Select a repository to start coding with Claude</p>
+        </div>
 
+        {/* Search */}
+        <div className="repos-search-container">
+          <div className="repos-search">
+            <SearchIcon />
+            <input
+              type="text"
+              placeholder="Search repositories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="repos-count">
+            {filteredRepos.length} {filteredRepos.length === 1 ? 'repository' : 'repositories'}
+          </div>
+        </div>
+
+        {/* Error message */}
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg mb-6">
+          <div className="repos-error">
+            <span>⚠️</span>
             {error}
+            <button onClick={() => setError(null)}>×</button>
           </div>
         )}
 
+        {/* Cloning overlay */}
         {cloning && (
-          <div className="bg-purple-900/50 border border-purple-500 text-purple-200 p-4 rounded-lg mb-6">
-            Setting up workspace for {selectedRepo}...
+          <div className="repos-cloning-overlay">
+            <div className="repos-cloning-modal">
+              <div className="repos-loading-spinner"></div>
+              <h3>Setting up workspace</h3>
+              <p>{selectedRepo}</p>
+            </div>
           </div>
         )}
 
-        <div className="grid gap-4">
-          {repos.map((repo) => (
+        {/* Repository grid */}
+        <div className="repos-grid">
+          {filteredRepos.map((repo) => (
             <div
               key={repo.id}
               onClick={() => !cloning && handleSelectRepo(repo)}
-              className={`
-                bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer
-                hover:border-purple-500 hover:bg-gray-750 transition-colors
-                ${selectedRepo === repo.fullName ? 'border-purple-500 bg-purple-900/20' : ''}
-                ${cloning ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
+              className={`repo-card ${selectedRepo === repo.fullName ? 'selected' : ''} ${cloning ? 'disabled' : ''}`}
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-medium text-purple-300">
-                    {repo.name}
-                    {repo.private && (
-                      <span className="ml-2 text-xs bg-gray-700 px-2 py-0.5 rounded">
-                        Private
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-gray-400 text-sm mt-1">
-                    {repo.description || 'No description'}
-                  </p>
+              <div className="repo-card-header">
+                <div className="repo-card-title">
+                  <RepoIcon />
+                  <h3>{repo.name}</h3>
+                  {repo.private && (
+                    <span className="repo-private-badge">
+                      <LockIcon />
+                      Private
+                    </span>
+                  )}
                 </div>
-                {repo.language && (
-                  <span className="text-xs bg-gray-700 px-2 py-1 rounded">
-                    {repo.language}
-                  </span>
-                )}
+                <div className="repo-card-arrow">
+                  <ArrowRightIcon />
+                </div>
               </div>
-              <div className="mt-2 text-xs text-gray-500">
-                Updated {new Date(repo.updatedAt).toLocaleDateString()}
+
+              <p className="repo-card-description">
+                {repo.description || 'No description provided'}
+              </p>
+
+              <div className="repo-card-footer">
+                {repo.language && (
+                  <div className="repo-language">
+                    <span
+                      className="repo-language-dot"
+                      style={{ backgroundColor: languageColors[repo.language] || '#8b8b8b' }}
+                    ></span>
+                    {repo.language}
+                  </div>
+                )}
+                <div className="repo-updated">
+                  Updated {formatDate(repo.updatedAt)}
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {repos.length === 0 && !error && (
-          <div className="text-gray-400 text-center py-12">
-            No repositories found. Create one on GitHub first.
+        {filteredRepos.length === 0 && !error && (
+          <div className="repos-empty">
+            <RepoIcon />
+            <h3>No repositories found</h3>
+            <p>
+              {searchQuery
+                ? 'Try a different search term'
+                : 'Create a repository on GitHub to get started'}
+            </p>
           </div>
         )}
       </main>
