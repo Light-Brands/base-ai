@@ -121,10 +121,14 @@ app.post('/api/chat', authenticateApiKey, (req: Request, res: Response) => {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Session-Id', activeSessionId);
 
-  // Spawn Claude CLI
-  const claude: ChildProcessWithoutNullStreams = spawn('claude', ['-p', fullPrompt], {
-    env: { ...process.env, NO_COLOR: '1' }
+  // Spawn Claude CLI with stdin pipe for prompt
+  const claude: ChildProcessWithoutNullStreams = spawn('claude', ['--print'], {
+    env: { ...process.env, NO_COLOR: '1', HOME: process.env.HOME || '/home/ubuntu' }
   });
+
+  // Write prompt to stdin and close it
+  claude.stdin.write(fullPrompt);
+  claude.stdin.end();
 
   let responseContent = '';
   let hasError = false;
