@@ -128,6 +128,19 @@ const XIcon = () => (
   </svg>
 );
 
+const CheckIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/>
+    <path d="m21 21-4.3-4.3"/>
+  </svg>
+);
+
 interface GitHubUser {
   login: string;
   name: string;
@@ -164,6 +177,10 @@ export default function Home() {
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [workspaceReady, setWorkspaceReady] = useState(false);
   const [settingUpWorkspace, setSettingUpWorkspace] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [mobileSheetView, setMobileSheetView] = useState<'repos' | 'branches'>('repos');
+  const [isMobile, setIsMobile] = useState(false);
+  const [repoSearchQuery, setRepoSearchQuery] = useState('');
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -188,6 +205,14 @@ export default function Home() {
           console.log('Service Worker registration failed:', error);
         });
     }
+
+    // Detect mobile screen
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   async function checkGitHubAuth() {
@@ -270,6 +295,43 @@ export default function Home() {
     setBranches([]);
     setWorkspaceReady(false);
   }
+
+  // Mobile sheet handlers
+  function openMobileRepoSheet() {
+    setMobileSheetView('repos');
+    setRepoSearchQuery('');
+    setMobileSheetOpen(true);
+  }
+
+  function openMobileBranchSheet() {
+    setMobileSheetView('branches');
+    setMobileSheetOpen(true);
+  }
+
+  function closeMobileSheet() {
+    setMobileSheetOpen(false);
+    setRepoSearchQuery('');
+  }
+
+  async function handleMobileSelectRepo(repo: Repo) {
+    setSelectedRepo(repo);
+    setSelectedBranch(repo.defaultBranch);
+    setWorkspaceReady(false);
+    setMobileSheetView('branches');
+    await loadBranches(repo.fullName);
+    await setupWorkspace(repo.fullName);
+  }
+
+  function handleMobileSelectBranch(branchName: string) {
+    setSelectedBranch(branchName);
+    closeMobileSheet();
+  }
+
+  // Filter repos by search query
+  const filteredRepos = repos.filter(repo =>
+    repo.name.toLowerCase().includes(repoSearchQuery.toLowerCase()) ||
+    repo.fullName.toLowerCase().includes(repoSearchQuery.toLowerCase())
+  );
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -694,73 +756,102 @@ export default function Home() {
             <div className="input-footer">
               {githubUser && (
                 <div className="workspace-selector">
-                  {/* Repo Selector */}
-                  <div className="selector-dropdown" ref={repoDropdownRef}>
-                    <button
-                      type="button"
-                      className={`selector-trigger ${selectedRepo ? 'active' : ''}`}
-                      onClick={() => setRepoDropdownOpen(!repoDropdownOpen)}
-                    >
-                      <RepoIcon />
-                      <span>{selectedRepo ? selectedRepo.name : 'Select repo'}</span>
-                      <ChevronDownIcon />
-                    </button>
-                    {repoDropdownOpen && (
-                      <div className="selector-menu">
-                        <div className="selector-menu-header">Your Repositories</div>
-                        <div className="selector-menu-list">
-                          {repos.map((repo) => (
-                            <button
-                              key={repo.id}
-                              type="button"
-                              className={`selector-menu-item ${selectedRepo?.id === repo.id ? 'selected' : ''}`}
-                              onClick={() => handleSelectRepo(repo)}
-                            >
-                              <RepoIcon />
-                              <span>{repo.name}</span>
-                            </button>
-                          ))}
-                          {repos.length === 0 && (
-                            <div className="selector-menu-empty">No repositories found</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Branch Selector */}
-                  {selectedRepo && (
-                    <div className="selector-dropdown" ref={branchDropdownRef}>
+                  {/* Mobile: Simplified selector that opens bottom sheet */}
+                  {isMobile ? (
+                    <>
                       <button
                         type="button"
-                        className={`selector-trigger ${selectedBranch ? 'active' : ''}`}
-                        onClick={() => setBranchDropdownOpen(!branchDropdownOpen)}
-                        disabled={loadingBranches}
+                        className={`selector-trigger mobile-selector ${selectedRepo ? 'active' : ''}`}
+                        onClick={openMobileRepoSheet}
                       >
-                        <BranchIcon />
-                        <span>{loadingBranches ? 'Loading...' : selectedBranch || 'Select branch'}</span>
+                        <RepoIcon />
+                        <span>{selectedRepo ? selectedRepo.name : 'Select repo'}</span>
                         <ChevronDownIcon />
                       </button>
-                      {branchDropdownOpen && !loadingBranches && (
-                        <div className="selector-menu">
-                          <div className="selector-menu-header">Branches</div>
-                          <div className="selector-menu-list">
-                            {branches.map((branch) => (
-                              <button
-                                key={branch.name}
-                                type="button"
-                                className={`selector-menu-item ${selectedBranch === branch.name ? 'selected' : ''}`}
-                                onClick={() => handleSelectBranch(branch.name)}
-                              >
-                                <BranchIcon />
-                                <span>{branch.name}</span>
-                                {branch.protected && <span className="branch-protected">protected</span>}
-                              </button>
-                            ))}
+                      {selectedRepo && (
+                        <button
+                          type="button"
+                          className={`selector-trigger mobile-selector ${selectedBranch ? 'active' : ''}`}
+                          onClick={openMobileBranchSheet}
+                          disabled={loadingBranches}
+                        >
+                          <BranchIcon />
+                          <span>{loadingBranches ? '...' : selectedBranch || 'Branch'}</span>
+                          <ChevronDownIcon />
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* Desktop: Dropdown selector */}
+                      <div className="selector-dropdown" ref={repoDropdownRef}>
+                        <button
+                          type="button"
+                          className={`selector-trigger ${selectedRepo ? 'active' : ''}`}
+                          onClick={() => setRepoDropdownOpen(!repoDropdownOpen)}
+                        >
+                          <RepoIcon />
+                          <span>{selectedRepo ? selectedRepo.name : 'Select repo'}</span>
+                          <ChevronDownIcon />
+                        </button>
+                        {repoDropdownOpen && (
+                          <div className="selector-menu">
+                            <div className="selector-menu-header">Your Repositories</div>
+                            <div className="selector-menu-list">
+                              {repos.map((repo) => (
+                                <button
+                                  key={repo.id}
+                                  type="button"
+                                  className={`selector-menu-item ${selectedRepo?.id === repo.id ? 'selected' : ''}`}
+                                  onClick={() => handleSelectRepo(repo)}
+                                >
+                                  <RepoIcon />
+                                  <span>{repo.name}</span>
+                                </button>
+                              ))}
+                              {repos.length === 0 && (
+                                <div className="selector-menu-empty">No repositories found</div>
+                              )}
+                            </div>
                           </div>
+                        )}
+                      </div>
+
+                      {/* Branch Selector */}
+                      {selectedRepo && (
+                        <div className="selector-dropdown" ref={branchDropdownRef}>
+                          <button
+                            type="button"
+                            className={`selector-trigger ${selectedBranch ? 'active' : ''}`}
+                            onClick={() => setBranchDropdownOpen(!branchDropdownOpen)}
+                            disabled={loadingBranches}
+                          >
+                            <BranchIcon />
+                            <span>{loadingBranches ? 'Loading...' : selectedBranch || 'Select branch'}</span>
+                            <ChevronDownIcon />
+                          </button>
+                          {branchDropdownOpen && !loadingBranches && (
+                            <div className="selector-menu">
+                              <div className="selector-menu-header">Branches</div>
+                              <div className="selector-menu-list">
+                                {branches.map((branch) => (
+                                  <button
+                                    key={branch.name}
+                                    type="button"
+                                    className={`selector-menu-item ${selectedBranch === branch.name ? 'selected' : ''}`}
+                                    onClick={() => handleSelectBranch(branch.name)}
+                                  >
+                                    <BranchIcon />
+                                    <span>{branch.name}</span>
+                                    {branch.protected && <span className="branch-protected">protected</span>}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
 
                   {/* Clear workspace button */}
@@ -788,6 +879,122 @@ export default function Home() {
           </form>
         </div>
       </main>
+
+      {/* Mobile Bottom Sheet for Repo/Branch Selection */}
+      {mobileSheetOpen && (
+        <div className="mobile-sheet-overlay" onClick={closeMobileSheet}>
+          <div className="mobile-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-sheet-handle" />
+
+            <div className="mobile-sheet-header">
+              <h3>{mobileSheetView === 'repos' ? 'Select Repository' : 'Select Branch'}</h3>
+              <button className="mobile-sheet-close" onClick={closeMobileSheet}>
+                <CloseIcon />
+              </button>
+            </div>
+
+            {/* Repo view */}
+            {mobileSheetView === 'repos' && (
+              <>
+                <div className="mobile-sheet-search">
+                  <SearchIcon />
+                  <input
+                    type="text"
+                    placeholder="Search repositories..."
+                    value={repoSearchQuery}
+                    onChange={(e) => setRepoSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="mobile-sheet-list">
+                  {filteredRepos.map((repo) => (
+                    <button
+                      key={repo.id}
+                      className={`mobile-sheet-item ${selectedRepo?.id === repo.id ? 'selected' : ''}`}
+                      onClick={() => handleMobileSelectRepo(repo)}
+                    >
+                      <div className="mobile-sheet-item-icon">
+                        <RepoIcon />
+                      </div>
+                      <div className="mobile-sheet-item-content">
+                        <span className="mobile-sheet-item-name">{repo.name}</span>
+                        <span className="mobile-sheet-item-meta">{repo.fullName}</span>
+                      </div>
+                      {selectedRepo?.id === repo.id && (
+                        <div className="mobile-sheet-item-check">
+                          <CheckIcon />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                  {filteredRepos.length === 0 && (
+                    <div className="mobile-sheet-empty">
+                      {repoSearchQuery ? 'No matching repositories' : 'No repositories found'}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Branch view */}
+            {mobileSheetView === 'branches' && (
+              <>
+                <div className="mobile-sheet-context">
+                  <RepoIcon />
+                  <span>{selectedRepo?.name}</span>
+                </div>
+                <div className="mobile-sheet-list">
+                  {loadingBranches ? (
+                    <div className="mobile-sheet-loading">Loading branches...</div>
+                  ) : (
+                    branches.map((branch) => (
+                      <button
+                        key={branch.name}
+                        className={`mobile-sheet-item ${selectedBranch === branch.name ? 'selected' : ''}`}
+                        onClick={() => handleMobileSelectBranch(branch.name)}
+                      >
+                        <div className="mobile-sheet-item-icon">
+                          <BranchIcon />
+                        </div>
+                        <div className="mobile-sheet-item-content">
+                          <span className="mobile-sheet-item-name">{branch.name}</span>
+                          {branch.protected && (
+                            <span className="mobile-sheet-item-badge">Protected</span>
+                          )}
+                        </div>
+                        {selectedBranch === branch.name && (
+                          <div className="mobile-sheet-item-check">
+                            <CheckIcon />
+                          </div>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+                <div className="mobile-sheet-actions">
+                  <button
+                    className="mobile-sheet-back"
+                    onClick={() => setMobileSheetView('repos')}
+                  >
+                    Change Repository
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Workspace status in sheet */}
+            {selectedRepo && (
+              <div className="mobile-sheet-status">
+                {settingUpWorkspace ? (
+                  <span className="status-loading">Setting up workspace...</span>
+                ) : workspaceReady ? (
+                  <span className="status-ready">Workspace ready</span>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
