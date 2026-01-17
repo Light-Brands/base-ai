@@ -39,3 +39,8 @@ next-env.d.ts
 # OS
 .DS_Store
 Thumbs.db
+
+# OCI Configuration (sensitive)
+.oci/
+*.pem
+!*.pem.example
