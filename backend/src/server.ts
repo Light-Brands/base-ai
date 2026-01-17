@@ -261,20 +261,8 @@ app.post('/api/chat', authenticateApiKey, (req: Request, res: Response) => {
     res.end();
   });
 
-  // Track if response completed normally
-  let responseCompleted = false;
-
-  // Handle client disconnect - only kill Claude if response hasn't completed
-  req.on('close', () => {
-    if (!responseCompleted && !claude.killed) {
-      claude.kill('SIGTERM');
-    }
-  });
-
-  // Mark response as completed when done
-  res.on('finish', () => {
-    responseCompleted = true;
-  });
+  // Note: Not handling req.on('close') because Express emits it prematurely
+  // for SSE connections. Claude will complete naturally.
 });
 
 // Get conversation history
