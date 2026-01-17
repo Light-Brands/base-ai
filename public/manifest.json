@@ -1,13 +1,14 @@
 {
   "name": "Lawless AI - Solution Architect",
   "short_name": "Lawless AI",
-  "description": "Chat with Lawless AI - bridging technical complexity and human understanding",
+  "description": "Your intelligent AI solution architect - bridging technical complexity and human understanding with clarity and precision",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A0F",
-  "theme_color": "#0A0A0F",
+  "background_color": "#0a0a0f",
+  "theme_color": "#a855f7",
   "orientation": "any",
   "scope": "/",
+  "id": "/",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -58,7 +59,17 @@
       "purpose": "maskable any"
     }
   ],
-  "categories": ["productivity", "utilities"],
+  "categories": ["productivity", "utilities", "developer-tools"],
   "lang": "en-US",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "short_name": "New",
+      "description": "Start a new conversation",
+      "url": "/?new=true",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
 }

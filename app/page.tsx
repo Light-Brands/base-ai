@@ -16,6 +16,83 @@ marked.setOptions({
   gfm: true,
 });
 
+// SVG Icons as components for cleaner code
+const SparkleIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 0L14.59 8.41L23 11L14.59 13.59L12 22L9.41 13.59L1 11L9.41 8.41L12 0Z"/>
+  </svg>
+);
+
+const LightningIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+  </svg>
+);
+
+const BrainIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.54"/>
+    <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.54"/>
+  </svg>
+);
+
+const CodeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="16 18 22 12 16 6"/>
+    <polyline points="8 6 2 12 8 18"/>
+  </svg>
+);
+
+const ChatIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+
+const SendIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 2L11 13"/>
+    <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
+
+const MenuIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h18"/>
+    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+
 export default function Home() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -267,30 +344,29 @@ export default function Home() {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="logo">
-            <div className="logo-icon">⚡</div>
+            <div className="logo-icon">
+              <LightningIcon />
+            </div>
             <div className="logo-text">
               <span className="logo-title">Lawless AI</span>
               <span className="logo-subtitle">Solution Architect</span>
             </div>
           </div>
           <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <CloseIcon />
           </button>
         </div>
 
         <nav className="sidebar-nav">
           <button className="nav-item active" onClick={() => { clearConversation(); setSidebarOpen(false); }}>
-            <span className="nav-icon">+</span>
+            <span className="nav-icon"><PlusIcon /></span>
             <span>New Chat</span>
           </button>
         </nav>
 
         <div className="sidebar-footer">
           <div className="powered-by">
-            <span>Powered by Claude CLI</span>
+            <span>Powered by Claude</span>
             <span className={`status-dot ${serverStatus === 'error' ? 'error' : ''}`}></span>
           </div>
         </div>
@@ -302,24 +378,16 @@ export default function Home() {
         <header className="chat-header">
           <div className="header-left">
             <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
+              <MenuIcon />
             </button>
             <div className="chat-title">
               <h1>Lawless AI</h1>
-              <p>Bridging technical complexity and human understanding</p>
+              <p>Your intelligent solution architect</p>
             </div>
           </div>
           <div className="header-actions">
             <button className="icon-btn" onClick={clearConversation} title="Clear conversation">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-              </svg>
+              <TrashIcon />
             </button>
           </div>
         </header>
@@ -329,19 +397,52 @@ export default function Home() {
           {/* Welcome Message */}
           {showWelcome && (
             <div className="welcome-message">
-              <div className="welcome-icon">⚡</div>
+              <div className="welcome-icon">
+                <LightningIcon />
+              </div>
+              <div className="welcome-badge">
+                <SparkleIcon />
+                <span>AI-Powered Assistant</span>
+              </div>
               <h2>Welcome to Lawless AI</h2>
-              <p>I&apos;m your Solution Architect - here to bridge the gap between technical complexity and human understanding. I&apos;ll translate complex concepts into clarity, warmth, and accessibility.</p>
+              <p>I&apos;m your Solution Architect, here to bridge the gap between technical complexity and human understanding. Ask me anything about architecture, code, or complex technical challenges.</p>
+
+              {/* Feature Cards */}
+              <div className="feature-cards">
+                <div className="feature-card">
+                  <div className="feature-card-icon">
+                    <BrainIcon />
+                  </div>
+                  <h3>Deep Understanding</h3>
+                  <p>Complex concepts explained with clarity and precision</p>
+                </div>
+                <div className="feature-card">
+                  <div className="feature-card-icon">
+                    <CodeIcon />
+                  </div>
+                  <h3>Code Assistance</h3>
+                  <p>Debug, optimize, and architect your solutions</p>
+                </div>
+                <div className="feature-card">
+                  <div className="feature-card-icon">
+                    <ChatIcon />
+                  </div>
+                  <h3>Natural Dialogue</h3>
+                  <p>Conversational AI that adapts to your needs</p>
+                </div>
+              </div>
+
+              <p className="suggestions-label">Try asking</p>
               <div className="welcome-suggestions">
                 <button
                   className="suggestion-chip"
-                  onClick={() => handleSuggestionClick("Help me understand how AI agents work in simple terms")}
+                  onClick={() => handleSuggestionClick("Help me understand how AI agents work")}
                 >
-                  Explain AI agents simply
+                  Explain AI agents
                 </button>
                 <button
                   className="suggestion-chip"
-                  onClick={() => handleSuggestionClick("What's the best way to architect a new web application?")}
+                  onClick={() => handleSuggestionClick("What's the best way to architect a scalable web application?")}
                 >
                   Web app architecture
                 </button>
@@ -349,7 +450,13 @@ export default function Home() {
                   className="suggestion-chip"
                   onClick={() => handleSuggestionClick("Can you help me debug a problem I'm having?")}
                 >
-                  Debug a problem
+                  Debug my code
+                </button>
+                <button
+                  className="suggestion-chip"
+                  onClick={() => handleSuggestionClick("Explain microservices vs monolith architecture")}
+                >
+                  Compare architectures
                 </button>
               </div>
             </div>
@@ -359,7 +466,7 @@ export default function Home() {
           {messages.map((msg, index) => (
             <div key={index} className={`message ${msg.role}`}>
               <div className="message-avatar">
-                {msg.role === 'assistant' ? '⚡' : '👤'}
+                {msg.role === 'assistant' ? <LightningIcon /> : <UserIcon />}
               </div>
               <div className="message-content">
                 <div
@@ -385,7 +492,7 @@ export default function Home() {
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Lawless AI anything..."
+                placeholder="Message Lawless AI..."
                 rows={1}
                 autoFocus
               />
@@ -394,10 +501,7 @@ export default function Home() {
                 className="send-btn"
                 disabled={!inputValue.trim() || isStreaming}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
+                <SendIcon />
               </button>
             </div>
             <div className="input-footer">

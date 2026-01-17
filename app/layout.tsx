@@ -14,7 +14,9 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Lawless AI - Solution Architect',
-  description: 'Chat with Lawless AI - bridging technical complexity and human understanding',
+  description: 'Your intelligent AI solution architect - bridging technical complexity and human understanding with clarity and precision',
+  keywords: ['AI', 'solution architect', 'chat', 'code assistant', 'technical help'],
+  authors: [{ name: 'Lawless AI' }],
 };
 
 export default function RootLayout({
@@ -26,7 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <meta name="theme-color" content="#0A0A0F" />
+        <meta name="theme-color" content="#a855f7" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Lawless AI" />
