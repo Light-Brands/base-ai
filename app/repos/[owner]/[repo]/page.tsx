@@ -223,7 +223,7 @@ export default function RepoBrowserPage() {
       // Fetch Vercel projects if connected
       if (vercelIsConnected) {
         try {
-          const vercelRes = await fetch('/api/vercel/projects');
+          const vercelRes = await fetch('/api/integrations/vercel/projects');
           const vercelData = await vercelRes.json();
           if (vercelData.projects) {
             setVercelProjects(vercelData.projects.map((p: { id: string; name: string }) => ({
@@ -239,7 +239,7 @@ export default function RepoBrowserPage() {
       // Fetch Supabase projects if connected
       if (supabaseIsConnected) {
         try {
-          const supabaseRes = await fetch('/api/supabase/projects');
+          const supabaseRes = await fetch('/api/integrations/supabase/projects');
           const supabaseData = await supabaseRes.json();
           if (supabaseData.projects) {
             setSupabaseProjects(supabaseData.projects.map((p: { id: string; name: string; ref?: string }) => ({
