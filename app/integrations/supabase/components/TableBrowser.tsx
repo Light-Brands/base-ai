@@ -31,6 +31,7 @@ interface TableBrowserProps {
   onEditRow: (row: Record<string, any>) => void;
   onDeleteRow: (filter: Record<string, any>) => void;
   onAddRow: () => void;
+  onAddColumn: () => void;
   onPageChange: (offset: number) => void;
 }
 
@@ -81,6 +82,13 @@ function truncateValue(value: string, maxLength = 100): string {
   return value;
 }
 
+const ColumnPlusIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" x2="12" y1="5" y2="19"/>
+    <line x1="5" x2="19" y1="12" y2="12"/>
+  </svg>
+);
+
 export default function TableBrowser({
   tableData,
   loading,
@@ -88,6 +96,7 @@ export default function TableBrowser({
   onEditRow,
   onDeleteRow,
   onAddRow,
+  onAddColumn,
   onPageChange,
 }: TableBrowserProps) {
   if (loading) {
@@ -147,6 +156,15 @@ export default function TableBrowser({
                     <span className="column-type">{column.type}</span>
                   </th>
                 ))}
+                <th className="add-column-header">
+                  <button
+                    onClick={onAddColumn}
+                    className="add-column-btn"
+                    title="Add Column"
+                  >
+                    <ColumnPlusIcon />
+                  </button>
+                </th>
                 <th className="actions-column">Actions</th>
               </tr>
             </thead>
@@ -168,6 +186,7 @@ export default function TableBrowser({
                         </span>
                       </td>
                     ))}
+                    <td className="add-column-spacer"></td>
                     <td className="actions-column">
                       <div className="row-actions">
                         <button

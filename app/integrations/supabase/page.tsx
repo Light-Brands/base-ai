@@ -7,6 +7,7 @@ import TableTree from './components/TableTree';
 import TableBrowser from './components/TableBrowser';
 import SQLEditorPanel from './components/SQLEditorPanel';
 import RowEditor from './components/RowEditor';
+import AddColumnModal, { ColumnDefinition } from './components/AddColumnModal';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import '../integrations.css';
 
@@ -117,6 +118,7 @@ export default function SupabasePage() {
   const [editingRow, setEditingRow] = useState<Record<string, any> | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showAddColumnModal, setShowAddColumnModal] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoadData();
@@ -307,6 +309,47 @@ export default function SupabasePage() {
       await loadTableData(selectedTable.name);
     }
   }, [selectedTable, selectedProject]);
+
+  const handleAddColumn = useCallback(async (column: ColumnDefinition) => {
+    if (!selectedProject || !selectedTable) return;
+
+    try {
+      // Build the ALTER TABLE ADD COLUMN SQL statement
+      let sql = `ALTER TABLE "${selectedTable.schema}"."${selectedTable.name}" ADD COLUMN "${column.name}" ${column.type}`;
+
+      if (!column.nullable) {
+        sql += ' NOT NULL';
+      }
+
+      if (column.defaultValue) {
+        sql += ` DEFAULT ${column.defaultValue}`;
+      }
+
+      const res = await fetch(
+        `/api/integrations/supabase/projects/${selectedProject.ref}/sql`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: sql }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.error) {
+        alert(`Failed to add column: ${data.error}${data.hint ? `\n\nHint: ${data.hint}` : ''}`);
+        return;
+      }
+
+      setShowAddColumnModal(false);
+      // Reload table data to show new column
+      await loadTableData(selectedTable.name);
+      // Also reload tables list to update column info
+      await loadTables(selectedProject.ref);
+    } catch (err) {
+      alert('Failed to add column');
+    }
+  }, [selectedProject, selectedTable]);
 
   async function handleDeleteProject() {
     if (!selectedProject) return;
@@ -505,6 +548,7 @@ export default function SupabasePage() {
                   setEditingRow(null);
                   setShowRowEditor(true);
                 }}
+                onAddColumn={() => setShowAddColumnModal(true)}
                 onPageChange={(offset) => loadTableData(selectedTable?.name || '', offset)}
               />
             </div>
@@ -554,6 +598,16 @@ export default function SupabasePage() {
         onCancel={() => setShowDeleteModal(false)}
         isLoading={isDeleting}
       />
+
+      {/* Add Column Modal */}
+      {selectedTable && (
+        <AddColumnModal
+          isOpen={showAddColumnModal}
+          tableName={selectedTable.name}
+          onClose={() => setShowAddColumnModal(false)}
+          onAdd={handleAddColumn}
+        />
+      )}
     </div>
   );
 }
