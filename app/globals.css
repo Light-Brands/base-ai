@@ -3469,10 +3469,13 @@ body::before {
 
 .repo-browser-page {
   min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
   z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .repo-browser-ambient {
@@ -3674,6 +3677,7 @@ body::before {
   margin: 0 auto;
   width: 100%;
   padding: var(--space-6);
+  min-height: 0;
 }
 
 /* Repo header */
@@ -3971,9 +3975,11 @@ body::before {
 .repo-browser-main-content {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  overflow-y: auto;
 }
 
 .repo-browser-content-loading {
