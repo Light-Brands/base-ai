@@ -901,6 +901,58 @@
   border-color: var(--color-surface-glass-border-hover);
 }
 
+/* View toggle (Code/Preview) */
+.file-viewer-toggle {
+  display: flex;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  margin-right: var(--space-2);
+}
+
+.file-viewer-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.file-viewer-toggle-btn:hover {
+  color: var(--color-text-secondary);
+}
+
+.file-viewer-toggle-btn.active {
+  background: var(--color-surface-glass);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.file-viewer-toggle-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Markdown preview */
+.file-viewer-preview {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-6);
+  background: var(--color-bg-primary);
+}
+
+.file-viewer-preview .markdown-body {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .file-viewer-content {
   display: flex;
   overflow: auto;

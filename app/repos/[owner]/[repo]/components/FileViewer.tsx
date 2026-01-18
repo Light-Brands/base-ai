@@ -41,6 +41,27 @@ const DownloadIcon = () => (
   </svg>
 );
 
+const CodeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="16 18 22 12 16 6"/>
+    <polyline points="8 6 2 12 8 18"/>
+  </svg>
+);
+
+const PreviewIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+const LinkIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+  </svg>
+);
+
 function getLanguage(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
   const languageMap: Record<string, string> = {
@@ -114,10 +135,20 @@ function isBinaryFile(filename: string): boolean {
   return binaryExtensions.includes(ext);
 }
 
-export default function FileViewer({ file, onNavigate }: FileViewerProps) {
+function isMarkdownFile(filename: string): boolean {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  return ['md', 'mdx', 'markdown'].includes(ext);
+}
+
+export default function FileViewer({ file, repoFullName, branch, onNavigate }: FileViewerProps) {
   const codeRef = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
   const [decodedContent, setDecodedContent] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'code' | 'preview'>('code');
+  const [renderedMarkdown, setRenderedMarkdown] = useState<string>('');
+
+  const isMarkdown = isMarkdownFile(file.name);
+  const fileUrl = `https://github.com/${repoFullName}/blob/${branch}/${file.path}`;
 
   useEffect(() => {
     if (file.encoding === 'base64' && !isImageFile(file.name) && !isBinaryFile(file.name)) {
@@ -131,14 +162,30 @@ export default function FileViewer({ file, onNavigate }: FileViewerProps) {
   }, [file]);
 
   useEffect(() => {
-    if (codeRef.current && decodedContent) {
+    if (codeRef.current && decodedContent && viewMode === 'code') {
       hljs.highlightElement(codeRef.current);
     }
-  }, [decodedContent]);
+  }, [decodedContent, viewMode]);
 
-  const handleCopy = async () => {
+  // Render markdown when in preview mode
+  useEffect(() => {
+    if (isMarkdown && decodedContent && viewMode === 'preview') {
+      marked.setOptions({
+        gfm: true,
+        breaks: true,
+      });
+      const rendered = marked(decodedContent);
+      if (typeof rendered === 'string') {
+        setRenderedMarkdown(rendered);
+      } else {
+        rendered.then(setRenderedMarkdown);
+      }
+    }
+  }, [decodedContent, viewMode, isMarkdown]);
+
+  const handleCopyUrl = async () => {
     try {
-      await navigator.clipboard.writeText(decodedContent);
+      await navigator.clipboard.writeText(fileUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -208,12 +255,32 @@ export default function FileViewer({ file, onNavigate }: FileViewerProps) {
           </span>
         </div>
         <div className="file-viewer-actions">
+          {isMarkdown && (
+            <div className="file-viewer-toggle">
+              <button
+                className={`file-viewer-toggle-btn ${viewMode === 'code' ? 'active' : ''}`}
+                onClick={() => setViewMode('code')}
+                title="View code"
+              >
+                <CodeIcon />
+                <span>Code</span>
+              </button>
+              <button
+                className={`file-viewer-toggle-btn ${viewMode === 'preview' ? 'active' : ''}`}
+                onClick={() => setViewMode('preview')}
+                title="Preview"
+              >
+                <PreviewIcon />
+                <span>Preview</span>
+              </button>
+            </div>
+          )}
           <button
             className="file-viewer-btn"
-            onClick={handleCopy}
-            title={copied ? 'Copied!' : 'Copy content'}
+            onClick={handleCopyUrl}
+            title={copied ? 'Copied!' : 'Copy link'}
           >
-            {copied ? <CheckIcon /> : <CopyIcon />}
+            {copied ? <CheckIcon /> : <LinkIcon />}
           </button>
           <button
             className="file-viewer-btn"
@@ -224,20 +291,29 @@ export default function FileViewer({ file, onNavigate }: FileViewerProps) {
           </button>
         </div>
       </div>
-      <div className="file-viewer-content">
-        <div className="file-viewer-line-numbers">
-          {lines.map((_, i) => (
-            <span key={i} className="file-viewer-line-number">
-              {i + 1}
-            </span>
-          ))}
+      {viewMode === 'preview' && isMarkdown ? (
+        <div className="file-viewer-preview">
+          <div
+            className="markdown-body"
+            dangerouslySetInnerHTML={{ __html: renderedMarkdown }}
+          />
         </div>
-        <pre className="file-viewer-code">
-          <code ref={codeRef} className={`language-${language}`}>
-            {decodedContent}
-          </code>
-        </pre>
-      </div>
+      ) : (
+        <div className="file-viewer-content">
+          <div className="file-viewer-line-numbers">
+            {lines.map((_, i) => (
+              <span key={i} className="file-viewer-line-number">
+                {i + 1}
+              </span>
+            ))}
+          </div>
+          <pre className="file-viewer-code">
+            <code ref={codeRef} className={`language-${language}`}>
+              {decodedContent}
+            </code>
+          </pre>
+        </div>
+      )}
     </div>
   );
 }

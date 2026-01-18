@@ -180,7 +180,12 @@ export default function RepoBrowser({
               <span>Loading...</span>
             </div>
           ) : isViewingFile ? (
-            <FileViewer file={fileData} onNavigate={onNavigate} />
+            <FileViewer
+              file={fileData}
+              repoFullName={repo.fullName}
+              branch={selectedBranch}
+              onNavigate={onNavigate}
+            />
           ) : (
             <>
               <DirectoryView
