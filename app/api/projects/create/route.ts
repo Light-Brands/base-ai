@@ -10,6 +10,9 @@ interface CreateProjectRequest {
   includeVercel?: boolean;
   includeSupabase?: boolean;
   supabaseRegion?: string;
+  githubOrg?: string;
+  vercelTeamId?: string;
+  supabaseOrgId?: string;
 }
 
 interface StepResult {
@@ -68,6 +71,9 @@ export async function POST(request: NextRequest) {
       includeVercel = true,
       includeSupabase = true,
       supabaseRegion = 'us-east-1',
+      githubOrg,
+      vercelTeamId,
+      supabaseOrgId,
     } = body;
 
     if (!name) {
@@ -93,12 +99,16 @@ export async function POST(request: NextRequest) {
     // Step 1: Create Supabase project first (takes longest to provision)
     if (includeSupabase) {
       try {
-        // Get organization ID
-        const orgsResponse = await fetch('https://api.supabase.com/v1/organizations', {
-          headers: { 'Authorization': `Bearer ${supabaseToken}` },
-        });
-        const orgs = await orgsResponse.json();
-        const orgId = orgs[0]?.id;
+        // Use provided org ID or fetch the first org
+        let orgId = supabaseOrgId;
+
+        if (!orgId) {
+          const orgsResponse = await fetch('https://api.supabase.com/v1/organizations', {
+            headers: { 'Authorization': `Bearer ${supabaseToken}` },
+          });
+          const orgs = await orgsResponse.json();
+          orgId = orgs[0]?.id;
+        }
 
         if (!orgId) {
           results.push({
@@ -166,8 +176,13 @@ export async function POST(request: NextRequest) {
     // Step 2: Create GitHub repository with template
     if (includeGitHub) {
       try {
+        // Use different endpoint for org vs personal repos
+        const githubApiUrl = githubOrg
+          ? `https://api.github.com/orgs/${githubOrg}/repos`
+          : 'https://api.github.com/user/repos';
+
         // Create repo
-        const createResponse = await fetch('https://api.github.com/user/repos', {
+        const createResponse = await fetch(githubApiUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${githubToken}`,
@@ -262,7 +277,12 @@ export async function POST(request: NextRequest) {
           },
         };
 
-        const createResponse = await fetch('https://api.vercel.com/v9/projects', {
+        // Add teamId query param if creating under a team
+        const vercelApiUrl = vercelTeamId
+          ? `https://api.vercel.com/v9/projects?teamId=${vercelTeamId}`
+          : 'https://api.vercel.com/v9/projects';
+
+        const createResponse = await fetch(vercelApiUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${vercelToken}`,
@@ -288,8 +308,13 @@ export async function POST(request: NextRequest) {
               envVars.push({ key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: supabaseProject.anonKey });
             }
 
+            // Include teamId in env var API calls if creating under a team
+            const envApiBase = vercelTeamId
+              ? `https://api.vercel.com/v10/projects/${project.id}/env?teamId=${vercelTeamId}`
+              : `https://api.vercel.com/v10/projects/${project.id}/env`;
+
             for (const envVar of envVars) {
-              await fetch(`https://api.vercel.com/v10/projects/${project.id}/env`, {
+              await fetch(envApiBase, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${vercelToken}`,

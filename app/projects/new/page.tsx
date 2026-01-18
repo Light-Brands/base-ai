@@ -28,6 +28,26 @@ interface CreateResult {
   };
 }
 
+interface GitHubAccount {
+  login: string;
+  name: string;
+  avatarUrl: string;
+  type: 'personal' | 'organization';
+}
+
+interface VercelAccount {
+  id: string;
+  slug: string;
+  name: string;
+  avatar?: string;
+  type: 'personal' | 'team';
+}
+
+interface SupabaseOrg {
+  id: string;
+  name: string;
+}
+
 const LightningIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -90,9 +110,23 @@ export default function NewProjectPage() {
   const [includeSupabase, setIncludeSupabase] = useState(true);
   const [supabaseRegion, setSupabaseRegion] = useState('us-east-1');
 
+  // Organization state
+  const [githubAccounts, setGithubAccounts] = useState<GitHubAccount[]>([]);
+  const [vercelAccounts, setVercelAccounts] = useState<VercelAccount[]>([]);
+  const [supabaseOrgs, setSupabaseOrgs] = useState<SupabaseOrg[]>([]);
+  const [selectedGithubAccount, setSelectedGithubAccount] = useState<string>('');
+  const [selectedVercelAccount, setSelectedVercelAccount] = useState<string>('');
+  const [selectedSupabaseOrg, setSelectedSupabaseOrg] = useState<string>('');
+
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (authStatus?.authenticated) {
+      loadOrganizations();
+    }
+  }, [authStatus]);
 
   async function checkAuth() {
     try {
@@ -107,6 +141,54 @@ export default function NewProjectPage() {
       console.error('Auth check failed:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadOrganizations() {
+    // Fetch GitHub accounts
+    try {
+      const res = await fetch('/api/github/orgs');
+      if (res.ok) {
+        const data = await res.json();
+        setGithubAccounts(data.accounts || []);
+        if (data.accounts?.length > 0) {
+          setSelectedGithubAccount(data.accounts[0].login);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load GitHub accounts:', error);
+    }
+
+    // Fetch Vercel accounts if connected
+    if (authStatus?.vercel?.connected) {
+      try {
+        const res = await fetch('/api/integrations/vercel/teams');
+        if (res.ok) {
+          const data = await res.json();
+          setVercelAccounts(data.accounts || []);
+          if (data.accounts?.length > 0) {
+            setSelectedVercelAccount(data.accounts[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load Vercel accounts:', error);
+      }
+    }
+
+    // Fetch Supabase orgs if connected
+    if (authStatus?.supabase?.connected) {
+      try {
+        const res = await fetch('/api/integrations/supabase/organizations');
+        if (res.ok) {
+          const data = await res.json();
+          setSupabaseOrgs(data.organizations || []);
+          if (data.organizations?.length > 0) {
+            setSelectedSupabaseOrg(data.organizations[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load Supabase orgs:', error);
+      }
     }
   }
 
@@ -141,6 +223,14 @@ export default function NewProjectPage() {
         }
       }, 3000);
 
+      // Get selected GitHub account info to determine if it's an org
+      const githubAccount = githubAccounts.find(a => a.login === selectedGithubAccount);
+      const githubOrg = githubAccount?.type === 'organization' ? selectedGithubAccount : undefined;
+
+      // Get selected Vercel account info to determine if it's a team
+      const vercelAccount = vercelAccounts.find(a => a.id === selectedVercelAccount);
+      const vercelTeamId = vercelAccount?.type === 'team' ? selectedVercelAccount : undefined;
+
       const res = await fetch('/api/projects/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -152,6 +242,9 @@ export default function NewProjectPage() {
           includeVercel,
           includeSupabase,
           supabaseRegion,
+          githubOrg,
+          vercelTeamId,
+          supabaseOrgId: selectedSupabaseOrg || undefined,
         }),
       });
 
@@ -328,6 +421,74 @@ export default function NewProjectPage() {
                     </select>
                   </div>
                 )}
+
+                {/* Organization Selectors */}
+                <div className="new-project-org-section">
+                  <h3 className="new-project-org-title">Create Under</h3>
+
+                  {githubAccounts.length > 0 && (
+                    <div className="new-project-field">
+                      <label htmlFor="githubAccount">
+                        <GitHubIcon />
+                        <span>GitHub Account</span>
+                      </label>
+                      <select
+                        id="githubAccount"
+                        value={selectedGithubAccount}
+                        onChange={(e) => setSelectedGithubAccount(e.target.value)}
+                        disabled={creating}
+                      >
+                        {githubAccounts.map((account) => (
+                          <option key={account.login} value={account.login}>
+                            {account.name} {account.type === 'organization' ? '(Org)' : '(Personal)'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {includeVercel && vercelConnected && vercelAccounts.length > 0 && (
+                    <div className="new-project-field">
+                      <label htmlFor="vercelAccount">
+                        <VercelIcon />
+                        <span>Vercel Account</span>
+                      </label>
+                      <select
+                        id="vercelAccount"
+                        value={selectedVercelAccount}
+                        onChange={(e) => setSelectedVercelAccount(e.target.value)}
+                        disabled={creating}
+                      >
+                        {vercelAccounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.name} {account.type === 'team' ? '(Team)' : '(Personal)'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {includeSupabase && supabaseConnected && supabaseOrgs.length > 0 && (
+                    <div className="new-project-field">
+                      <label htmlFor="supabaseOrg">
+                        <SupabaseIcon />
+                        <span>Supabase Organization</span>
+                      </label>
+                      <select
+                        id="supabaseOrg"
+                        value={selectedSupabaseOrg}
+                        onChange={(e) => setSelectedSupabaseOrg(e.target.value)}
+                        disabled={creating}
+                      >
+                        {supabaseOrgs.map((org) => (
+                          <option key={org.id} value={org.id}>
+                            {org.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
 
                 <button
                   className="new-project-create-btn"
