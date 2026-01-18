@@ -100,6 +100,9 @@ function generateSessionName(index: number): string {
   return `Session ${index + 1}`;
 }
 
+// Max lines to store per session
+const MAX_HISTORY_LINES = 1000;
+
 export default function TerminalPage() {
   const params = useParams();
   const router = useRouter();
@@ -108,6 +111,7 @@ export default function TerminalPage() {
   const terminals = useRef<Map<string, any>>(new Map());
   const websockets = useRef<Map<string, WebSocket>>(new Map());
   const initializedSessions = useRef<Set<string>>(new Set());
+  const sessionOutputs = useRef<Map<string, string[]>>(new Map());
 
   const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<TerminalSession[]>([]);
@@ -117,6 +121,8 @@ export default function TerminalPage() {
   const [error, setError] = useState<string | null>(null);
 
   const repoPath = Array.isArray(params.repo) ? params.repo.join('/') : params.repo;
+  const storageKey = repoPath ? `terminal_sessions_${repoPath.replace('/', '_')}` : null;
+  const outputStorageKey = repoPath ? `terminal_outputs_${repoPath.replace('/', '_')}` : null;
 
   // Check auth on mount
   useEffect(() => {
@@ -147,7 +153,7 @@ export default function TerminalPage() {
     checkAuth();
   }, [router]);
 
-  // Load saved sessions from localStorage
+  // Load saved sessions and outputs from localStorage
   useEffect(() => {
     if (!repoPath) return;
 
@@ -168,6 +174,19 @@ export default function TerminalPage() {
         console.error('Failed to parse saved sessions');
       }
     }
+
+    // Load saved outputs
+    const savedOutputs = localStorage.getItem(`terminal_outputs_${repoPath.replace('/', '_')}`);
+    if (savedOutputs) {
+      try {
+        const parsed = JSON.parse(savedOutputs);
+        Object.entries(parsed).forEach(([sessionId, lines]) => {
+          sessionOutputs.current.set(sessionId, lines as string[]);
+        });
+      } catch (e) {
+        console.error('Failed to parse saved outputs');
+      }
+    }
   }, [repoPath]);
 
   // Save sessions to localStorage
@@ -181,6 +200,46 @@ export default function TerminalPage() {
     }));
     localStorage.setItem(`terminal_sessions_${repoPath.replace('/', '_')}`, JSON.stringify(toSave));
   }, [sessions, repoPath]);
+
+  // Save outputs to localStorage periodically and on unmount
+  useEffect(() => {
+    if (!repoPath) return;
+
+    const saveOutputs = () => {
+      const outputs: Record<string, string[]> = {};
+      sessionOutputs.current.forEach((lines, sessionId) => {
+        outputs[sessionId] = lines;
+      });
+      if (Object.keys(outputs).length > 0) {
+        localStorage.setItem(`terminal_outputs_${repoPath.replace('/', '_')}`, JSON.stringify(outputs));
+      }
+    };
+
+    // Save every 5 seconds
+    const interval = setInterval(saveOutputs, 5000);
+
+    // Also save on visibility change (when user navigates away)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        saveOutputs();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Save on beforeunload
+    const handleBeforeUnload = () => {
+      saveOutputs();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Save on unmount
+      saveOutputs();
+    };
+  }, [repoPath]);
 
   // Connect to WebSocket for a session
   const connectWebSocket = useCallback((sessionId: string, term: any) => {
@@ -209,27 +268,48 @@ export default function TerminalPage() {
     };
 
     ws.onmessage = (event) => {
+      // Helper to capture output for persistence
+      const captureOutput = (data: string) => {
+        let lines = sessionOutputs.current.get(sessionId) || [];
+        // Split data by lines and add to buffer
+        const newLines = data.split('\n');
+        lines = [...lines, ...newLines];
+        // Keep only the last MAX_HISTORY_LINES
+        if (lines.length > MAX_HISTORY_LINES) {
+          lines = lines.slice(-MAX_HISTORY_LINES);
+        }
+        sessionOutputs.current.set(sessionId, lines);
+      };
+
       try {
         const msg = JSON.parse(event.data);
 
         switch (msg.type) {
           case 'connected':
+            const connectedMsg = `\x1b[32m${msg.message}\x1b[0m\n\x1b[90mStarting Claude CLI...\x1b[0m\r\n`;
             term.writeln(`\x1b[32m${msg.message}\x1b[0m`);
             term.writeln('\x1b[90mStarting Claude CLI...\x1b[0m\r\n');
+            captureOutput(connectedMsg);
             break;
           case 'output':
             term.write(msg.data);
+            captureOutput(msg.data);
             break;
           case 'error':
-            term.writeln(`\x1b[31mError: ${msg.message}\x1b[0m`);
+            const errorMsg = `\x1b[31mError: ${msg.message}\x1b[0m`;
+            term.writeln(errorMsg);
+            captureOutput(errorMsg + '\n');
             setError(msg.message);
             break;
           case 'exit':
-            term.writeln(`\r\n\x1b[90mProcess exited with code ${msg.code}\x1b[0m`);
+            const exitMsg = `\r\n\x1b[90mProcess exited with code ${msg.code}\x1b[0m`;
+            term.writeln(exitMsg);
+            captureOutput(exitMsg + '\n');
             break;
         }
       } catch (e) {
         term.write(event.data);
+        captureOutput(event.data);
       }
     };
 
@@ -307,6 +387,16 @@ export default function TerminalPage() {
     terminals.current.set(sessionId, term);
     fitAddons.current.set(sessionId, fit);
 
+    // Restore saved output if available
+    const savedOutput = sessionOutputs.current.get(sessionId);
+    if (savedOutput && savedOutput.length > 0) {
+      term.writeln('\x1b[90m--- Restored session history ---\x1b[0m');
+      savedOutput.forEach(line => {
+        term.writeln(line);
+      });
+      term.writeln('\x1b[90m--- End of history ---\x1b[0m\r\n');
+    }
+
     // Connect to WebSocket
     connectWebSocket(sessionId, term);
 
@@ -383,6 +473,7 @@ export default function TerminalPage() {
     fitAddons.current.delete(sessionId);
     terminalContainersRef.current.delete(sessionId);
     initializedSessions.current.delete(sessionId);
+    sessionOutputs.current.delete(sessionId);
 
     // Remove from state
     setSessions(prev => {
