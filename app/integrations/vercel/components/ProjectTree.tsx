@@ -4,6 +4,8 @@ interface Project {
   id: string;
   name: string;
   framework: string | null;
+  createdAt: number;
+  updatedAt: number;
   latestDeployment: {
     id: string;
     url: string;
