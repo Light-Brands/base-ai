@@ -21,6 +21,9 @@ bin/
 lib/
 dist/
 build/
+.next/
+next-env.d.ts
+tsconfig.tsbuildinfo
 
 # Logs
 *.log
