@@ -4,107 +4,66 @@ export const runtime = 'nodejs';
 
 const AI_CODING_CONFIG_REPO = 'TechNickAI/ai-coding-config';
 
-// Directories/files to copy from ai-coding-config to new projects
-const AI_CONFIG_PATHS = [
-  '.cursor',
-  '.claude', 
-  'AGENTS.md',
-  'CLAUDE.md',
-  '.prettierrc',
-  '.prettierignore',
-];
+// Only skip .git internals - literally everything else comes through
+const SKIP_PREFIXES = ['.git/'];
+const SKIP_FILES: string[] = [];
 
-// Fetch file contents from GitHub
-async function fetchGitHubFile(repo: string, path: string, token: string): Promise<string | null> {
-  try {
-    const response = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3.raw',
-      },
-    });
-    if (response.ok) {
-      return await response.text();
-    }
-  } catch {
-    // File doesn't exist or error
-  }
-  return null;
-}
-
-// Recursively fetch directory contents from GitHub
-async function fetchGitHubDirectory(
-  repo: string, 
-  dirPath: string, 
-  token: string
-): Promise<Record<string, string>> {
+// Fetch entire repo using Git Trees API (2 API calls instead of hundreds)
+async function fetchAiCodingConfig(token: string): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
-  
+
   try {
-    const response = await fetch(`https://api.github.com/repos/${repo}/contents/${dirPath}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
+    // 1. Get the default branch SHA
+    const repoRes = await fetch(`https://api.github.com/repos/${AI_CODING_CONFIG_REPO}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
     });
-    
-    if (!response.ok) return files;
-    
-    const contents = await response.json();
-    
-    for (const item of contents) {
-      if (item.type === 'file') {
-        // Skip symlinks and large files
-        if (item.type === 'symlink' || item.size > 100000) continue;
-        
-        const content = await fetchGitHubFile(repo, item.path, token);
-        if (content) {
-          files[item.path] = content;
-        }
-      } else if (item.type === 'dir') {
-        // Recursively fetch subdirectory
-        const subFiles = await fetchGitHubDirectory(repo, item.path, token);
-        Object.assign(files, subFiles);
+    if (!repoRes.ok) return files;
+    const repo = await repoRes.json();
+    const defaultBranch = repo.default_branch;
+
+    // 2. Get the entire tree recursively (ONE API call for all files)
+    const treeRes = await fetch(
+      `https://api.github.com/repos/${AI_CODING_CONFIG_REPO}/git/trees/${defaultBranch}?recursive=1`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    if (!treeRes.ok) return files;
+    const tree = await treeRes.json();
+
+    // 3. Filter and fetch blobs in parallel
+    const blobs = tree.tree.filter((item: { type: string; path: string; size?: number }) => {
+      if (item.type !== 'blob') return false;
+      if (item.size && item.size > 100000) return false;
+      if (SKIP_FILES.includes(item.path)) return false;
+      if (SKIP_PREFIXES.some(p => item.path.startsWith(p))) return false;
+      return true;
+    });
+
+    // Fetch all file contents in parallel (batched)
+    const batchSize = 20;
+    for (let i = 0; i < blobs.length; i += batchSize) {
+      const batch = blobs.slice(i, i + batchSize);
+      const contents = await Promise.all(
+        batch.map(async (blob: { path: string; sha: string }) => {
+          const res = await fetch(
+            `https://api.github.com/repos/${AI_CODING_CONFIG_REPO}/git/blobs/${blob.sha}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
+          if (!res.ok) return null;
+          const data = await res.json();
+          // Decode base64 content
+          const content = Buffer.from(data.content, 'base64').toString('utf-8');
+          return { path: blob.path, content };
+        })
+      );
+      for (const item of contents) {
+        if (item) files[item.path] = item.content;
       }
     }
   } catch (error) {
-    console.error(`Error fetching directory ${dirPath}:`, error);
+    console.error('Error fetching ai-coding-config:', error);
   }
-  
-  return files;
-}
 
-// Fetch all ai-coding-config files from GitHub
-async function fetchAiCodingConfig(token: string): Promise<Record<string, string>> {
-  const allFiles: Record<string, string> = {};
-  
-  for (const configPath of AI_CONFIG_PATHS) {
-    // Check if it's a file or directory
-    const response = await fetch(`https://api.github.com/repos/${AI_CODING_CONFIG_REPO}/contents/${configPath}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    });
-    
-    if (!response.ok) continue;
-    
-    const content = await response.json();
-    
-    if (Array.isArray(content)) {
-      // It's a directory
-      const dirFiles = await fetchGitHubDirectory(AI_CODING_CONFIG_REPO, configPath, token);
-      Object.assign(allFiles, dirFiles);
-    } else if (content.type === 'file') {
-      // It's a file
-      const fileContent = await fetchGitHubFile(AI_CODING_CONFIG_REPO, configPath, token);
-      if (fileContent) {
-        allFiles[configPath] = fileContent;
-      }
-    }
-  }
-  
-  return allFiles;
+  return files;
 }
 
 interface CreateProjectRequest {

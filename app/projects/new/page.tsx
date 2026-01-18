@@ -107,6 +107,7 @@ export default function NewProjectPage() {
   const [projectName, setProjectName] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(true);
+  const [includeAiConfig, setIncludeAiConfig] = useState(true);
   const [includeVercel, setIncludeVercel] = useState(true);
   const [includeSupabase, setIncludeSupabase] = useState(true);
   const [supabaseRegion, setSupabaseRegion] = useState('us-east-1');
@@ -209,37 +210,25 @@ export default function NewProjectPage() {
     setCreating(true);
     setCurrentStep('Starting...');
 
+    // Get selected GitHub account info to determine if it's an org
+    const githubAccount = githubAccounts.find(a => a.login === selectedGithubAccount);
+    const githubOrg = githubAccount?.type === 'organization' ? selectedGithubAccount : undefined;
+
+    // Get selected Vercel account info to determine if it's a team
+    const vercelAccount = vercelAccounts.find(a => a.id === selectedVercelAccount);
+    const vercelTeamId = vercelAccount?.type === 'team' ? selectedVercelAccount : undefined;
+
+    const stepResults: StepResult[] = [];
+
     try {
-      // Simulate progress updates
-      const steps: string[] = [];
-      if (includeSupabase) steps.push('Creating Supabase database...');
-      steps.push('Creating GitHub repository...');
-      if (includeVercel) steps.push('Setting up Vercel deployment...');
-
-      let stepIndex = 0;
-      const progressInterval = setInterval(() => {
-        if (stepIndex < steps.length) {
-          setCurrentStep(steps[stepIndex]);
-          stepIndex++;
-        }
-      }, 3000);
-
-      // Get selected GitHub account info to determine if it's an org
-      const githubAccount = githubAccounts.find(a => a.login === selectedGithubAccount);
-      const githubOrg = githubAccount?.type === 'organization' ? selectedGithubAccount : undefined;
-
-      // Get selected Vercel account info to determine if it's a team
-      const vercelAccount = vercelAccounts.find(a => a.id === selectedVercelAccount);
-      const vercelTeamId = vercelAccount?.type === 'team' ? selectedVercelAccount : undefined;
-
-      const res = await fetch('/api/projects/create', {
+      const response = await fetch('/api/projects/create-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: projectName,
           description,
           isPrivate,
-          includeGitHub: true,
+          includeAiConfig,
           includeVercel,
           includeSupabase,
           supabaseRegion,
@@ -249,10 +238,53 @@ export default function NewProjectPage() {
         }),
       });
 
-      clearInterval(progressInterval);
+      if (!response.body) throw new Error('No response body');
 
-      const data = await res.json();
-      setResult(data);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7);
+          } else if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+
+            if (eventType === 'progress') {
+              setCurrentStep(data.message);
+            } else if (eventType === 'step') {
+              stepResults.push({
+                step: data.step,
+                status: data.status,
+                data: data.data,
+                error: data.error,
+              });
+            } else if (eventType === 'complete') {
+              setResult({
+                success: data.success,
+                results: stepResults,
+                summary: data.summary,
+              });
+            } else if (eventType === 'error') {
+              setResult({
+                success: false,
+                results: [...stepResults, { step: 'error', status: 'error', error: data.message }],
+                summary: {},
+              });
+            }
+          }
+        }
+      }
+
       setCurrentStep('');
     } catch (error) {
       console.error('Create failed:', error);
@@ -377,6 +409,16 @@ export default function NewProjectPage() {
                       disabled={creating}
                     />
                     <span>Private repository</span>
+                  </label>
+
+                  <label className="new-project-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={includeAiConfig}
+                      onChange={(e) => setIncludeAiConfig(e.target.checked)}
+                      disabled={creating}
+                    />
+                    <span>Include AI coding config</span>
                   </label>
 
                   <label className="new-project-checkbox">
