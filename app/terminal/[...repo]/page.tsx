@@ -103,10 +103,11 @@ function generateSessionName(index: number): string {
 export default function TerminalPage() {
   const params = useParams();
   const router = useRouter();
-  const terminalContainerRef = useRef<HTMLDivElement>(null);
+  const terminalContainersRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const fitAddons = useRef<Map<string, any>>(new Map());
   const terminals = useRef<Map<string, any>>(new Map());
   const websockets = useRef<Map<string, WebSocket>>(new Map());
+  const initializedSessions = useRef<Set<string>>(new Set());
 
   const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<TerminalSession[]>([]);
@@ -181,125 +182,7 @@ export default function TerminalPage() {
     localStorage.setItem(`terminal_sessions_${repoPath.replace('/', '_')}`, JSON.stringify(toSave));
   }, [sessions, repoPath]);
 
-  // Initialize terminal for active session
-  useEffect(() => {
-    if (!user || !repoPath || !activeSessionId || !terminalContainerRef.current) return;
-
-    // Check if terminal already exists for this session
-    if (terminals.current.has(activeSessionId)) {
-      // Just refit and show the existing terminal
-      const existingTerm = terminals.current.get(activeSessionId);
-      const fit = fitAddons.current.get(activeSessionId);
-      if (fit) {
-        setTimeout(() => fit.fit(), 100);
-      }
-      return;
-    }
-
-    let mounted = true;
-
-    async function initTerminal() {
-      // Dynamically import xterm modules
-      const xtermModule = await import('@xterm/xterm');
-      const fitModule = await import('@xterm/addon-fit');
-      const webLinksModule = await import('@xterm/addon-web-links');
-
-      Terminal = xtermModule.Terminal;
-      FitAddon = fitModule.FitAddon;
-      WebLinksAddon = webLinksModule.WebLinksAddon;
-
-      if (!mounted || !terminalContainerRef.current) return;
-
-      // Create terminal
-      const term = new Terminal({
-        cursorBlink: true,
-        cursorStyle: 'block',
-        fontSize: 14,
-        fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", Menlo, Monaco, monospace',
-        theme: {
-          background: '#0d1117',
-          foreground: '#c9d1d9',
-          cursor: '#58a6ff',
-          cursorAccent: '#0d1117',
-          selectionBackground: '#264f78',
-          black: '#484f58',
-          red: '#ff7b72',
-          green: '#3fb950',
-          yellow: '#d29922',
-          blue: '#58a6ff',
-          magenta: '#bc8cff',
-          cyan: '#39c5cf',
-          white: '#b1bac4',
-          brightBlack: '#6e7681',
-          brightRed: '#ffa198',
-          brightGreen: '#56d364',
-          brightYellow: '#e3b341',
-          brightBlue: '#79c0ff',
-          brightMagenta: '#d2a8ff',
-          brightCyan: '#56d4dd',
-          brightWhite: '#f0f6fc',
-        },
-        allowProposedApi: true,
-      });
-
-      const fit = new FitAddon();
-      const webLinks = new WebLinksAddon();
-
-      term.loadAddon(fit);
-      term.loadAddon(webLinks);
-
-      // Clear container and open terminal
-      terminalContainerRef.current.innerHTML = '';
-      term.open(terminalContainerRef.current);
-      fit.fit();
-
-      terminals.current.set(activeSessionId!, term);
-      fitAddons.current.set(activeSessionId!, fit);
-
-      // Connect to WebSocket
-      connectWebSocket(activeSessionId!, term);
-
-      // Handle input
-      term.onData((data: string) => {
-        const ws = websockets.current.get(activeSessionId!);
-        if (ws?.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'input', data }));
-        }
-      });
-    }
-
-    initTerminal();
-
-    return () => {
-      mounted = false;
-    };
-  }, [user, repoPath, activeSessionId, backendWsUrl]);
-
-  // Handle resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (activeSessionId) {
-        const fit = fitAddons.current.get(activeSessionId);
-        const term = terminals.current.get(activeSessionId);
-        const ws = websockets.current.get(activeSessionId);
-
-        if (fit && term) {
-          fit.fit();
-          if (ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'resize',
-              cols: term.cols,
-              rows: term.rows,
-            }));
-          }
-        }
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [activeSessionId]);
-
+  // Connect to WebSocket for a session
   const connectWebSocket = useCallback((sessionId: string, term: any) => {
     const wsUrl = `${backendWsUrl}/ws/terminal?repo=${encodeURIComponent(repoPath!)}&session=${sessionId}`;
 
@@ -366,6 +249,111 @@ export default function TerminalPage() {
     };
   }, [backendWsUrl, repoPath]);
 
+  // Initialize terminal for a session
+  const initializeTerminal = useCallback(async (sessionId: string, container: HTMLDivElement) => {
+    if (initializedSessions.current.has(sessionId)) return;
+    initializedSessions.current.add(sessionId);
+
+    // Dynamically import xterm modules
+    const xtermModule = await import('@xterm/xterm');
+    const fitModule = await import('@xterm/addon-fit');
+    const webLinksModule = await import('@xterm/addon-web-links');
+
+    Terminal = xtermModule.Terminal;
+    FitAddon = fitModule.FitAddon;
+    WebLinksAddon = webLinksModule.WebLinksAddon;
+
+    // Create terminal
+    const term = new Terminal({
+      cursorBlink: true,
+      cursorStyle: 'block',
+      fontSize: 14,
+      fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", Menlo, Monaco, monospace',
+      theme: {
+        background: '#0d1117',
+        foreground: '#c9d1d9',
+        cursor: '#58a6ff',
+        cursorAccent: '#0d1117',
+        selectionBackground: '#264f78',
+        black: '#484f58',
+        red: '#ff7b72',
+        green: '#3fb950',
+        yellow: '#d29922',
+        blue: '#58a6ff',
+        magenta: '#bc8cff',
+        cyan: '#39c5cf',
+        white: '#b1bac4',
+        brightBlack: '#6e7681',
+        brightRed: '#ffa198',
+        brightGreen: '#56d364',
+        brightYellow: '#e3b341',
+        brightBlue: '#79c0ff',
+        brightMagenta: '#d2a8ff',
+        brightCyan: '#56d4dd',
+        brightWhite: '#f0f6fc',
+      },
+      allowProposedApi: true,
+    });
+
+    const fit = new FitAddon();
+    const webLinks = new WebLinksAddon();
+
+    term.loadAddon(fit);
+    term.loadAddon(webLinks);
+
+    term.open(container);
+    fit.fit();
+
+    terminals.current.set(sessionId, term);
+    fitAddons.current.set(sessionId, fit);
+
+    // Connect to WebSocket
+    connectWebSocket(sessionId, term);
+
+    // Handle input
+    term.onData((data: string) => {
+      const ws = websockets.current.get(sessionId);
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'input', data }));
+      }
+    });
+  }, [connectWebSocket]);
+
+  // Refit terminal when switching sessions
+  useEffect(() => {
+    if (!activeSessionId) return;
+
+    const fit = fitAddons.current.get(activeSessionId);
+    if (fit) {
+      setTimeout(() => fit.fit(), 100);
+    }
+  }, [activeSessionId]);
+
+  // Handle resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (activeSessionId) {
+        const fit = fitAddons.current.get(activeSessionId);
+        const term = terminals.current.get(activeSessionId);
+        const ws = websockets.current.get(activeSessionId);
+
+        if (fit && term) {
+          fit.fit();
+          if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'resize',
+              cols: term.cols,
+              rows: term.rows,
+            }));
+          }
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeSessionId]);
+
   const createNewSession = useCallback(() => {
     const newSession: TerminalSession = {
       id: generateSessionId(),
@@ -393,6 +381,8 @@ export default function TerminalPage() {
     }
 
     fitAddons.current.delete(sessionId);
+    terminalContainersRef.current.delete(sessionId);
+    initializedSessions.current.delete(sessionId);
 
     // Remove from state
     setSessions(prev => {
@@ -409,27 +399,15 @@ export default function TerminalPage() {
 
   const switchSession = useCallback((sessionId: string) => {
     if (sessionId === activeSessionId) return;
-
-    // Hide current terminal
-    if (terminalContainerRef.current) {
-      terminalContainerRef.current.innerHTML = '';
-    }
-
     setActiveSessionId(sessionId);
 
-    // Show the terminal for the new session if it exists
+    // Refit the terminal after switching
     setTimeout(() => {
-      const term = terminals.current.get(sessionId);
       const fit = fitAddons.current.get(sessionId);
-
-      if (term && terminalContainerRef.current) {
-        terminalContainerRef.current.innerHTML = '';
-        term.open(terminalContainerRef.current);
-        if (fit) {
-          fit.fit();
-        }
+      if (fit) {
+        fit.fit();
       }
-    }, 50);
+    }, 100);
   }, [activeSessionId]);
 
   const reconnectSession = useCallback((sessionId: string) => {
@@ -972,7 +950,23 @@ export default function TerminalPage() {
                   </div>
                   <div className="terminal-container">
                     <div className="terminal-wrapper">
-                      <div ref={terminalContainerRef} style={{ height: '100%' }} />
+                      {sessions.map(session => (
+                        <div
+                          key={session.id}
+                          ref={(el) => {
+                            if (el && !terminalContainersRef.current.has(session.id)) {
+                              terminalContainersRef.current.set(session.id, el);
+                              if (user && repoPath) {
+                                initializeTerminal(session.id, el);
+                              }
+                            }
+                          }}
+                          style={{
+                            height: '100%',
+                            display: session.id === activeSessionId ? 'block' : 'none',
+                          }}
+                        />
+                      ))}
                     </div>
                   </div>
                 </>
