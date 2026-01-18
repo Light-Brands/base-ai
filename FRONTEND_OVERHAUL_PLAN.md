@@ -3,6 +3,59 @@
 
 ---
 
+## Completed Features
+
+### GitHub-like Repository File Browser (Completed)
+A full file browser for exploring repositories before opening in workspace.
+
+**Route:** `/repos/[owner]/[repo]`
+
+**Features Implemented:**
+- [x] Two-column layout (280px sidebar + flexible content)
+- [x] File tree sidebar with collapsible directories
+- [x] Directory view with file/folder table
+- [x] File viewer with syntax highlighting (highlight.js)
+- [x] Breadcrumb navigation for path traversal
+- [x] README preview with markdown rendering at root level
+- [x] Branch switching - select any branch from dropdown
+- [x] "Open in Workspace" button to start coding with Claude
+- [x] Responsive design for mobile/tablet
+- [x] File type icons for different extensions
+- [x] Dark theme matching existing design
+
+**Files Created:**
+```
+app/api/github/
+├── repo/route.ts       # Single repo metadata
+├── contents/route.ts   # Directory listing or file content
+├── tree/route.ts       # Full recursive file tree
+└── readme/route.ts     # README content for preview
+
+app/repos/[owner]/[repo]/
+├── page.tsx            # Main browser page
+├── loading.tsx         # Loading skeleton
+└── components/
+    ├── RepoBrowser.tsx     # Main container
+    ├── RepoHeader.tsx      # Repo name, stats, breadcrumb, branch selector
+    ├── FileTree.tsx        # Left sidebar tree view
+    ├── FileTreeItem.tsx    # Recursive tree node
+    ├── fileIcons.tsx       # File type icons
+    ├── DirectoryView.tsx   # File/folder table
+    ├── FileViewer.tsx      # Code viewer with syntax highlighting
+    ├── Breadcrumb.tsx      # Path navigation
+    └── ReadmePreview.tsx   # Markdown renderer
+```
+
+**Data Flow:**
+1. Click repo card on `/repos` → Navigate to `/repos/owner/repo`
+2. Parallel fetch: repo metadata, tree, branches, root contents, README
+3. Click folder → Update `?path=`, fetch children, expand tree
+4. Click file → Update `?path=&view=blob`, fetch content, show viewer
+5. Switch branch → Reload tree, contents, README for new branch
+6. "Open in Workspace" → Navigate to `/workspace/owner/repo`
+
+---
+
 ## Phase 1: Understand the Data Stream
 
 ### 1.1 Claude CLI Stream Format
@@ -105,14 +158,14 @@ app/
 │   ├── code/
 │   │   ├── CodeBlock.tsx            # Syntax highlighted code
 │   │   ├── DiffView.tsx             # Side-by-side or unified diff
-│   │   ├── FileTree.tsx             # File path breadcrumb
-│   │   └── LineNumbers.tsx          # Line number gutter
+│   │   ├── FileTree.tsx             # File path breadcrumb (DONE - in repo browser)
+│   │   └── LineNumbers.tsx          # Line number gutter (DONE - in FileViewer)
 │   │
 │   └── ui/
 │       ├── Collapsible.tsx          # Expand/collapse wrapper
 │       ├── StatusIndicator.tsx      # Loading/success/error states
 │       ├── ProgressBar.tsx          # For long operations
-│       └── CopyButton.tsx           # Copy to clipboard
+│       └── CopyButton.tsx           # Copy to clipboard (DONE - in FileViewer)
 ```
 
 ### 3.2 Tool Card Design
@@ -398,6 +451,18 @@ function useStreamingMessage() {
 
 ## Phase 7: Implementation Steps
 
+### Completed
+- [x] GitHub-like repository file browser
+- [x] File tree sidebar with collapsible directories
+- [x] File viewer with syntax highlighting
+- [x] Branch switching functionality
+- [x] Breadcrumb navigation
+- [x] README preview with markdown
+- [x] Responsive scrolling fixes
+
+### In Progress
+- [ ] Integrations page (Vercel, Supabase connections)
+
 ### Week 1: Backend & Data Layer
 1. [ ] SSH to Oracle, capture sample `stream-json` output from Claude CLI
 2. [ ] Document all event types and structures
@@ -429,9 +494,9 @@ function useStreamingMessage() {
 6. [ ] Performance optimization (virtualization for long outputs)
 
 ### Week 5: Advanced Features
-1. [ ] File tree sidebar showing touched files
+1. [x] File tree sidebar showing touched files (done in repo browser)
 2. [ ] Minimap for long code blocks
-3. [ ] Copy button for code/commands
+3. [x] Copy button for code/commands (done in FileViewer)
 4. [ ] "Jump to change" navigation
 5. [ ] Background task panel (like VS Code terminal)
 6. [ ] Real-time command output streaming
@@ -451,6 +516,10 @@ function useStreamingMessage() {
   }
 }
 ```
+
+**Already in use:**
+- `highlight.js` - Syntax highlighting (used in FileViewer)
+- `marked` - Markdown parsing (used in ReadmePreview)
 
 ---
 
@@ -536,10 +605,13 @@ To begin implementation today:
 
 ## Success Metrics
 
+- [x] Repository file browser with GitHub-like experience
+- [x] File tree navigation with syntax highlighting
+- [x] Branch switching capability
 - [ ] Tool invocations visible as cards (not raw text)
 - [ ] File reads show syntax-highlighted code
 - [ ] Edits show before/after diffs
 - [ ] Bash commands show live output
 - [ ] Cards are collapsible with smooth animation
 - [ ] Status indicators show tool progress
-- [ ] Mobile responsive and performant
+- [x] Mobile responsive and performant
