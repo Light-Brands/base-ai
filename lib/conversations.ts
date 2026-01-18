@@ -1,4 +1,4 @@
-import { LAWLESS_SYSTEM_PROMPT } from './constants';
+import { SYSTEM_PROMPT } from './constants';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -28,7 +28,7 @@ export function createConversation(sessionId: string): void {
 }
 
 export function buildPromptWithHistory(history: Message[]): string {
-  let prompt = LAWLESS_SYSTEM_PROMPT + '\n\n';
+  let prompt = SYSTEM_PROMPT + '\n\n';
   prompt += '---\n\nConversation:\n\n';
 
   for (const msg of history) {
