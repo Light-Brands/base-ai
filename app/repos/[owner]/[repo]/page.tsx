@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import RepoBrowser from './components/RepoBrowser';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import CredentialsModal from '@/app/components/CredentialsModal';
 import { branding } from '../../../../branding.config';
 
 interface RepoData {
@@ -164,6 +165,10 @@ export default function RepoBrowserPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingVisibility, setIsTogglingVisibility] = useState(false);
+
+  // Credentials modal state
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [dbPassword, setDbPassword] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthAndLoadData();
@@ -474,7 +479,8 @@ export default function RepoBrowserPage() {
 
           // Show the database password to the user
           if (data.project.dbPassword) {
-            alert(`Database created!\n\nIMPORTANT - Save your database password:\n${data.project.dbPassword}\n\nThis won't be shown again.`);
+            setDbPassword(data.project.dbPassword);
+            setShowCredentialsModal(true);
           }
 
           // Add to projects list
@@ -670,6 +676,19 @@ export default function RepoBrowserPage() {
         onConfirm={handleDeleteRepo}
         onCancel={() => setShowDeleteModal(false)}
         isLoading={isDeleting}
+      />
+
+      {/* Database Credentials Modal */}
+      <CredentialsModal
+        isOpen={showCredentialsModal}
+        title="Database Created"
+        subtitle="Your Supabase database has been created and linked to this repository."
+        credentials={dbPassword ? [{ label: 'Database Password', value: dbPassword, sensitive: true }] : []}
+        warning="Save this password now. It won't be shown again."
+        onClose={() => {
+          setShowCredentialsModal(false);
+          setDbPassword(null);
+        }}
       />
     </div>
   );
