@@ -64,6 +64,17 @@ interface Branch {
   protected: boolean;
 }
 
+interface VercelProject {
+  id: string;
+  name: string;
+}
+
+interface SupabaseProject {
+  id: string;
+  name: string;
+  ref: string;
+}
+
 interface RepoBrowserProps {
   repo: RepoData;
   tree: TreeNode[];
@@ -78,6 +89,14 @@ interface RepoBrowserProps {
   onNavigate: (path: string, isFile?: boolean) => void;
   onOpenWorkspace: () => void;
   onBranchChange: (branch: string) => void;
+  vercelConnected: boolean;
+  supabaseConnected: boolean;
+  vercelProjects: VercelProject[];
+  supabaseProjects: SupabaseProject[];
+  selectedVercelProject: { projectId: string; projectName: string } | null;
+  selectedSupabaseProject: { projectRef: string; projectName: string } | null;
+  onVercelProjectChange: (projectId: string) => void;
+  onSupabaseProjectChange: (projectRef: string) => void;
 }
 
 export default function RepoBrowser({
@@ -94,6 +113,14 @@ export default function RepoBrowser({
   onNavigate,
   onOpenWorkspace,
   onBranchChange,
+  vercelConnected,
+  supabaseConnected,
+  vercelProjects,
+  supabaseProjects,
+  selectedVercelProject,
+  selectedSupabaseProject,
+  onVercelProjectChange,
+  onSupabaseProjectChange,
 }: RepoBrowserProps) {
   const isViewingFile = view === 'blob' && fileData;
 
@@ -107,6 +134,14 @@ export default function RepoBrowser({
         onNavigate={onNavigate}
         onOpenWorkspace={onOpenWorkspace}
         onBranchChange={onBranchChange}
+        vercelConnected={vercelConnected}
+        supabaseConnected={supabaseConnected}
+        vercelProjects={vercelProjects}
+        supabaseProjects={supabaseProjects}
+        selectedVercelProject={selectedVercelProject}
+        selectedSupabaseProject={selectedSupabaseProject}
+        onVercelProjectChange={onVercelProjectChange}
+        onSupabaseProjectChange={onSupabaseProjectChange}
       />
 
       <div className="repo-browser-content">

@@ -24,6 +24,17 @@ interface Branch {
   protected: boolean;
 }
 
+interface VercelProject {
+  id: string;
+  name: string;
+}
+
+interface SupabaseProject {
+  id: string;
+  name: string;
+  ref: string;
+}
+
 interface RepoHeaderProps {
   repo: RepoData;
   currentPath: string;
@@ -32,6 +43,14 @@ interface RepoHeaderProps {
   onNavigate: (path: string, isFile?: boolean) => void;
   onOpenWorkspace: () => void;
   onBranchChange: (branch: string) => void;
+  vercelConnected: boolean;
+  supabaseConnected: boolean;
+  vercelProjects: VercelProject[];
+  supabaseProjects: SupabaseProject[];
+  selectedVercelProject: { projectId: string; projectName: string } | null;
+  selectedSupabaseProject: { projectRef: string; projectName: string } | null;
+  onVercelProjectChange: (projectId: string) => void;
+  onSupabaseProjectChange: (projectRef: string) => void;
 }
 
 const StarIcon = () => (
@@ -80,6 +99,23 @@ const BranchIcon = () => (
   </svg>
 );
 
+const VercelIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2L2 19.5h20L12 2z"/>
+  </svg>
+);
+
+const SupabaseIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2v4"/>
+    <path d="m6.8 15-3.5 2"/>
+    <path d="m20.7 17-3.5-2"/>
+    <path d="M6.8 9 3.3 7"/>
+    <path d="m20.7 7-3.5 2"/>
+    <circle cx="12" cy="12" r="4"/>
+  </svg>
+);
+
 export default function RepoHeader({
   repo,
   currentPath,
@@ -88,6 +124,14 @@ export default function RepoHeader({
   onNavigate,
   onOpenWorkspace,
   onBranchChange,
+  vercelConnected,
+  supabaseConnected,
+  vercelProjects,
+  supabaseProjects,
+  selectedVercelProject,
+  selectedSupabaseProject,
+  onVercelProjectChange,
+  onSupabaseProjectChange,
 }: RepoHeaderProps) {
   return (
     <div className="repo-header">
@@ -160,6 +204,43 @@ export default function RepoHeader({
             )}
           </select>
         </div>
+
+        {vercelConnected && (
+          <div className={`repo-integration-selector ${selectedVercelProject ? 'has-selection' : ''}`}>
+            <VercelIcon />
+            <select
+              value={selectedVercelProject?.projectId || ''}
+              onChange={(e) => onVercelProjectChange(e.target.value)}
+              className="repo-integration-select"
+            >
+              <option value="">No Vercel project</option>
+              {vercelProjects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {supabaseConnected && (
+          <div className={`repo-integration-selector ${selectedSupabaseProject ? 'has-selection' : ''}`}>
+            <SupabaseIcon />
+            <select
+              value={selectedSupabaseProject?.projectRef || ''}
+              onChange={(e) => onSupabaseProjectChange(e.target.value)}
+              className="repo-integration-select"
+            >
+              <option value="">No Supabase database</option>
+              {supabaseProjects.map((project) => (
+                <option key={project.ref} value={project.ref}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <Breadcrumb
           repoName={repo.name}
           currentPath={currentPath}

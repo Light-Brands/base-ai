@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const vercelToken = request.cookies.get('vercel_token')?.value;
   const supabaseToken = request.cookies.get('supabase_token')?.value;
   const supabaseProjects = request.cookies.get('supabase_projects')?.value;
+  const repoIntegrationsCookie = request.cookies.get('repo_integrations')?.value;
 
   const result: {
     authenticated: boolean;
@@ -27,11 +28,26 @@ export async function GET(request: NextRequest) {
       connected: boolean;
       projectCount?: number;
     };
+    repoIntegrations?: {
+      [repoFullName: string]: {
+        vercel?: { projectId: string; projectName: string };
+        supabase?: { projectRef: string; projectName: string };
+      };
+    };
   } = {
     authenticated: false,
     vercel: { connected: false },
     supabase: { connected: false },
   };
+
+  // Parse repo integrations
+  if (repoIntegrationsCookie) {
+    try {
+      result.repoIntegrations = JSON.parse(repoIntegrationsCookie);
+    } catch (error) {
+      console.error('Repo integrations parse failed:', error);
+    }
+  }
 
   // Check GitHub auth
   if (githubToken) {

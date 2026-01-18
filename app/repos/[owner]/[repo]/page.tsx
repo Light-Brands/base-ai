@@ -69,6 +69,22 @@ interface Branch {
   protected: boolean;
 }
 
+interface VercelProject {
+  id: string;
+  name: string;
+}
+
+interface SupabaseProject {
+  id: string;
+  name: string;
+  ref: string;
+}
+
+interface RepoIntegration {
+  vercel?: { projectId: string; projectName: string };
+  supabase?: { projectRef: string; projectName: string };
+}
+
 const LightningIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -132,6 +148,14 @@ export default function RepoBrowserPage() {
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [branches, setBranches] = useState<Branch[]>([]);
 
+  // Integration state
+  const [vercelConnected, setVercelConnected] = useState(false);
+  const [supabaseConnected, setSupabaseConnected] = useState(false);
+  const [vercelProjects, setVercelProjects] = useState<VercelProject[]>([]);
+  const [supabaseProjects, setSupabaseProjects] = useState<SupabaseProject[]>([]);
+  const [selectedVercelProject, setSelectedVercelProject] = useState<{ projectId: string; projectName: string } | null>(null);
+  const [selectedSupabaseProject, setSelectedSupabaseProject] = useState<{ projectRef: string; projectName: string } | null>(null);
+
   useEffect(() => {
     checkAuthAndLoadData();
   }, [owner, repo]);
@@ -153,6 +177,22 @@ export default function RepoBrowserPage() {
       }
 
       setUser(authData.user);
+
+      // Check integration connections
+      const vercelIsConnected = authData.vercel?.connected || false;
+      const supabaseIsConnected = authData.supabase?.connected || false;
+      setVercelConnected(vercelIsConnected);
+      setSupabaseConnected(supabaseIsConnected);
+
+      // Load existing repo integrations for this repo
+      const repoFullName = `${owner}/${repo}`;
+      const existingIntegrations = authData.repoIntegrations?.[repoFullName];
+      if (existingIntegrations?.vercel) {
+        setSelectedVercelProject(existingIntegrations.vercel);
+      }
+      if (existingIntegrations?.supabase) {
+        setSelectedSupabaseProject(existingIntegrations.supabase);
+      }
 
       // Load repo data, tree, branches, and initial contents in parallel
       const [repoRes, treeRes, contentsRes, readmeRes, branchesRes] = await Promise.all([
@@ -177,8 +217,41 @@ export default function RepoBrowserPage() {
       }
 
       setRepoData(repoResult.repo);
-      setSelectedBranch(repoResult.repo.defaultBranch);
+      setSelectedBranch('main');
       setBranches(branchesResult.branches || []);
+
+      // Fetch Vercel projects if connected
+      if (vercelIsConnected) {
+        try {
+          const vercelRes = await fetch('/api/vercel/projects');
+          const vercelData = await vercelRes.json();
+          if (vercelData.projects) {
+            setVercelProjects(vercelData.projects.map((p: { id: string; name: string }) => ({
+              id: p.id,
+              name: p.name,
+            })));
+          }
+        } catch (err) {
+          console.error('Failed to load Vercel projects:', err);
+        }
+      }
+
+      // Fetch Supabase projects if connected
+      if (supabaseIsConnected) {
+        try {
+          const supabaseRes = await fetch('/api/supabase/projects');
+          const supabaseData = await supabaseRes.json();
+          if (supabaseData.projects) {
+            setSupabaseProjects(supabaseData.projects.map((p: { id: string; name: string; ref?: string }) => ({
+              id: p.id,
+              name: p.name,
+              ref: p.ref || p.id,
+            })));
+          }
+        } catch (err) {
+          console.error('Failed to load Supabase projects:', err);
+        }
+      }
       setTree(treeResult.tree || []);
 
       if (contentsResult.type === 'dir') {
@@ -286,6 +359,58 @@ export default function RepoBrowserPage() {
     }
   }
 
+  async function handleVercelProjectChange(projectId: string) {
+    const repoFullName = `${owner}/${repo}`;
+
+    if (!projectId) {
+      // Clear selection
+      setSelectedVercelProject(null);
+      await fetch('/api/repos/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo: repoFullName, vercel: null }),
+      });
+      return;
+    }
+
+    const project = vercelProjects.find(p => p.id === projectId);
+    if (project) {
+      const selection = { projectId: project.id, projectName: project.name };
+      setSelectedVercelProject(selection);
+      await fetch('/api/repos/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo: repoFullName, vercel: selection }),
+      });
+    }
+  }
+
+  async function handleSupabaseProjectChange(projectRef: string) {
+    const repoFullName = `${owner}/${repo}`;
+
+    if (!projectRef) {
+      // Clear selection
+      setSelectedSupabaseProject(null);
+      await fetch('/api/repos/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo: repoFullName, supabase: null }),
+      });
+      return;
+    }
+
+    const project = supabaseProjects.find(p => p.ref === projectRef);
+    if (project) {
+      const selection = { projectRef: project.ref, projectName: project.name };
+      setSelectedSupabaseProject(selection);
+      await fetch('/api/repos/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo: repoFullName, supabase: selection }),
+      });
+    }
+  }
+
   if (loading) {
     return (
       <div className="repo-browser-page">
@@ -369,6 +494,14 @@ export default function RepoBrowserPage() {
           onNavigate={navigateTo}
           onOpenWorkspace={handleOpenWorkspace}
           onBranchChange={handleBranchChange}
+          vercelConnected={vercelConnected}
+          supabaseConnected={supabaseConnected}
+          vercelProjects={vercelProjects}
+          supabaseProjects={supabaseProjects}
+          selectedVercelProject={selectedVercelProject}
+          selectedSupabaseProject={selectedSupabaseProject}
+          onVercelProjectChange={handleVercelProjectChange}
+          onSupabaseProjectChange={handleSupabaseProjectChange}
         />
       )}
     </div>
