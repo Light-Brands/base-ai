@@ -1567,11 +1567,14 @@ body::before {
    ============================================================================ */
 
 .repos-page {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   position: relative;
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .repos-ambient {
