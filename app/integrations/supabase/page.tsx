@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import TableTree from './components/TableTree';
 import TableBrowser from './components/TableBrowser';
@@ -103,6 +103,7 @@ const TrashIcon = () => (
 
 export default function SupabasePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
@@ -152,10 +153,14 @@ export default function SupabasePage() {
 
       setProjects(projectsData.projects || []);
 
-      // Select first project by default
+      // Select project from URL param, or first project by default
       if (projectsData.projects?.length > 0) {
-        setSelectedProject(projectsData.projects[0]);
-        await loadTables(projectsData.projects[0].ref);
+        const projectRef = searchParams.get('project');
+        const targetProject = projectRef
+          ? projectsData.projects.find((p: Project) => p.ref === projectRef) || projectsData.projects[0]
+          : projectsData.projects[0];
+        setSelectedProject(targetProject);
+        await loadTables(targetProject.ref);
       }
     } catch (err) {
       setError('Failed to load Supabase data');
