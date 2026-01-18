@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { branding } from '../../branding.config';
 
 interface SupabaseProject {
   id: string;
@@ -261,7 +262,7 @@ export default function DatabasesPage() {
                 <div className="databases-logo-icon">
                   <LightningIcon />
                 </div>
-                <span className="databases-logo-text">Lawless AI</span>
+                <span className="databases-logo-text">{branding.shortName}</span>
               </Link>
             </div>
             {user && (
@@ -320,7 +321,7 @@ export default function DatabasesPage() {
               <div className="databases-logo-icon">
                 <LightningIcon />
               </div>
-              <span className="databases-logo-text">Lawless AI</span>
+              <span className="databases-logo-text">{branding.shortName}</span>
             </Link>
           </div>
 

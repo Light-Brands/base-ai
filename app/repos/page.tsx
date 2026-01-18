@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { branding } from '../../branding.config';
 
 interface Repo {
   id: number;
@@ -230,7 +231,7 @@ export default function ReposPage() {
               <div className="repos-logo-icon">
                 <LightningIcon />
               </div>
-              <span className="repos-logo-text">Lawless AI</span>
+              <span className="repos-logo-text">{branding.shortName}</span>
             </Link>
           </div>
 

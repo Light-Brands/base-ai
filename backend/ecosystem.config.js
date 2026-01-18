@@ -4,7 +4,7 @@
 module.exports = {
   apps: [
     {
-      name: 'lawless-backend',
+      name: 'ai-architect-backend',
       script: './dist/server.js',
       instances: 1,
       exec_mode: 'fork',

@@ -1,10 +1,10 @@
 #!/bin/bash
-# Nginx reverse proxy setup for Lawless AI Backend
+# Nginx reverse proxy setup for AI Solution Architect Backend
 # Run with: sudo bash scripts/setup-nginx.sh your-domain.com
 
 set -e
 
-DOMAIN=${1:-"api.lawless-ai.com"}
+DOMAIN=${1:-"api.your-app.com"}
 
 echo "=== Setting up Nginx for $DOMAIN ==="
 
@@ -13,13 +13,13 @@ apt update
 apt install -y nginx certbot python3-certbot-nginx
 
 # Create Nginx config
-cat > /etc/nginx/sites-available/lawless-ai << EOF
-# Lawless AI Backend - Nginx Configuration
+cat > /etc/nginx/sites-available/ai-architect << EOF
+# AI Solution Architect Backend - Nginx Configuration
 
 # Rate limiting
 limit_req_zone \$binary_remote_addr zone=api_limit:10m rate=10r/s;
 
-upstream lawless_backend {
+upstream ai_architect_backend {
     server 127.0.0.1:3001;
     keepalive 64;
 }
@@ -36,7 +36,7 @@ server {
         limit_req zone=api_limit burst=20 nodelay;
 
         # Proxy settings
-        proxy_pass http://lawless_backend;
+        proxy_pass http://ai_architect_backend;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -55,14 +55,14 @@ server {
 
     # Health check endpoint (no rate limit)
     location /health {
-        proxy_pass http://lawless_backend;
+        proxy_pass http://ai_architect_backend;
         proxy_http_version 1.1;
     }
 }
 EOF
 
 # Enable the site
-ln -sf /etc/nginx/sites-available/lawless-ai /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/ai-architect /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
 # Test config

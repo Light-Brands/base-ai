@@ -1,5 +1,5 @@
-const CACHE_NAME = 'lawless-ai-v1';
-const STATIC_CACHE_NAME = 'lawless-ai-static-v1';
+const CACHE_NAME = 'ai-architect-v1';
+const STATIC_CACHE_NAME = 'ai-architect-static-v1';
 
 // Static assets to cache for offline use
 const STATIC_ASSETS = [

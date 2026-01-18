@@ -650,7 +650,7 @@ export default function ToolsDemoPage() {
         <div className="demo-grid">
           <BashTool
             command="npm run build"
-            output={`> lawless-ai@1.0.0 build
+            output={`> ai-solution-architect@1.0.0 build
 > next build
 
    Creating an optimized production build...

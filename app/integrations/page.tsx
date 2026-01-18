@@ -7,6 +7,7 @@ import GitHubCard from './components/GitHubCard';
 import VercelCard from './components/VercelCard';
 import SupabaseCard from './components/SupabaseCard';
 import './integrations.css';
+import { branding } from '../../branding.config';
 
 interface User {
   login: string;
@@ -167,7 +168,7 @@ export default function IntegrationsPage() {
               <div className="integrations-logo-icon">
                 <LightningIcon />
               </div>
-              <span className="integrations-logo-text">Lawless AI</span>
+              <span className="integrations-logo-text">{branding.shortName}</span>
             </Link>
           </div>
 
@@ -205,7 +206,7 @@ export default function IntegrationsPage() {
             <IntegrationsIcon />
           </div>
           <h1>Integrations</h1>
-          <p>Connect your services to unlock the full power of Lawless AI</p>
+          <p>Connect your services to unlock the full power of {branding.name}</p>
         </div>
 
         {/* Integration cards grid */}
@@ -231,7 +232,7 @@ export default function IntegrationsPage() {
 
         {/* Integration capabilities */}
         <div className="integrations-capabilities">
-          <h2>What can Lawless AI do with these integrations?</h2>
+          <h2>What can {branding.name} do with these integrations?</h2>
           <div className="capabilities-grid">
             <div className="capability-card">
               <div className="capability-icon github">

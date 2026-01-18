@@ -1,6 +1,6 @@
 # Oracle Cloud Infrastructure (OCI) Setup
 
-This document explains how to configure Oracle Cloud for the Lawless AI backend.
+This document explains how to configure Oracle Cloud for the AI Solution Architect backend.
 
 ## Prerequisites
 

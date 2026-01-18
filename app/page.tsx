@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
+import { branding } from '../branding.config';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -578,8 +579,8 @@ export default function Home() {
               <LightningIcon />
             </div>
             <div className="logo-text">
-              <span className="logo-title">Lawless AI</span>
-              <span className="logo-subtitle">Solution Architect</span>
+              <span className="logo-title">{branding.shortName}</span>
+              <span className="logo-subtitle">{branding.tagline}</span>
             </div>
           </div>
           <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
@@ -611,8 +612,8 @@ export default function Home() {
               <MenuIcon />
             </button>
             <div className="chat-title">
-              <h1>Lawless AI</h1>
-              <p>Your intelligent solution architect</p>
+              <h1>{branding.shortName}</h1>
+              <p>Your intelligent {branding.tagline.toLowerCase()}</p>
             </div>
           </div>
           <div className="header-actions">
@@ -653,8 +654,8 @@ export default function Home() {
                 <SparkleIcon />
                 <span>AI-Powered Assistant</span>
               </div>
-              <h2>Welcome to Lawless AI</h2>
-              <p>I&apos;m your Solution Architect, here to bridge the gap between technical complexity and human understanding. Ask me anything about architecture, code, or complex technical challenges.</p>
+              <h2>Welcome to {branding.name}</h2>
+              <p>I&apos;m your {branding.tagline}, here to bridge the gap between technical complexity and human understanding. Ask me anything about architecture, code, or complex technical challenges.</p>
 
               {/* Feature Cards */}
               <div className="feature-cards">
@@ -741,7 +742,7 @@ export default function Home() {
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Message Lawless AI..."
+                placeholder={`Message ${branding.shortName}...`}
                 rows={1}
                 autoFocus
               />

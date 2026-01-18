@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL
   ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/github/callback`
-  : 'https://lawless-ai.vercel.app/api/auth/github/callback';
+  : 'http://localhost:3000/api/auth/github/callback';
 
 export async function GET(request: NextRequest) {
   if (!GITHUB_CLIENT_ID) {

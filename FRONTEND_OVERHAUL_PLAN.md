@@ -201,7 +201,7 @@ Each tool invocation should be a collapsible card:
 │ 💻 Bash                                    ▼ Collapse   │
 │ npm run build                              ⏳ Running    │
 ├─────────────────────────────────────────────────────────┤
-│ > lawless-ai@1.0.0 build                                │
+│ > ai-solution-architect@1.0.0 build                     │
 │ > next build                                            │
 │                                                         │
 │ ✓ Creating optimized production build                   │

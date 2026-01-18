@@ -8,6 +8,7 @@ import DeploymentList from './components/DeploymentList';
 import BuildLogsViewer from './components/BuildLogsViewer';
 import EnvVarsPanel from './components/EnvVarsPanel';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { branding } from '../../../branding.config';
 import '../integrations.css';
 
 interface User {
@@ -357,7 +358,7 @@ function VercelPageContent() {
               <div className="vercel-logo-icon">
                 <LightningIcon />
               </div>
-              <span className="vercel-logo-text">Lawless AI</span>
+              <span className="vercel-logo-text">{branding.shortName}</span>
             </Link>
           </div>
 

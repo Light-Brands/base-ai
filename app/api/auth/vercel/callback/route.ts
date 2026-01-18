@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 
 const VERCEL_CLIENT_ID = process.env.VERCEL_CLIENT_ID;
 const VERCEL_CLIENT_SECRET = process.env.VERCEL_CLIENT_SECRET;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://lawless-ai.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

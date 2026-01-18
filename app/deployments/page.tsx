@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { branding } from '../../branding.config';
 
 interface VercelProject {
   id: string;
@@ -285,7 +286,7 @@ export default function DeploymentsPage() {
                 <div className="deployments-logo-icon">
                   <LightningIcon />
                 </div>
-                <span className="deployments-logo-text">Lawless AI</span>
+                <span className="deployments-logo-text">{branding.shortName}</span>
               </Link>
             </div>
             {user && (
@@ -344,7 +345,7 @@ export default function DeploymentsPage() {
               <div className="deployments-logo-icon">
                 <LightningIcon />
               </div>
-              <span className="deployments-logo-text">Lawless AI</span>
+              <span className="deployments-logo-text">{branding.shortName}</span>
             </Link>
           </div>
 

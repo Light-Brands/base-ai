@@ -8,6 +8,7 @@ import TableBrowser from './components/TableBrowser';
 import SQLEditorPanel from './components/SQLEditorPanel';
 import RowEditor from './components/RowEditor';
 import AddColumnModal, { ColumnDefinition } from './components/AddColumnModal';
+import { branding } from '../../../branding.config';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import '../integrations.css';
 
@@ -438,7 +439,7 @@ function SupabasePageContent() {
               <div className="supabase-logo-icon">
                 <LightningIcon />
               </div>
-              <span className="supabase-logo-text">Lawless AI</span>
+              <span className="supabase-logo-text">{branding.shortName}</span>
             </Link>
           </div>
 

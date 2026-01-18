@@ -44,7 +44,7 @@ const DisconnectIcon = () => (
 
 export default function GitHubCard({ connected, user, onDisconnect }: GitHubCardProps) {
   const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://lawless-ai.vercel.app';
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${APP_URL}/api/auth/github/callback&scope=repo,read:user`;
 
   return (

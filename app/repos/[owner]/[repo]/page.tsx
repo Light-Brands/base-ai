@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import RepoBrowser from './components/RepoBrowser';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { branding } from '../../../../branding.config';
 
 interface RepoData {
   id: number;
@@ -595,7 +596,7 @@ export default function RepoBrowserPage() {
               <div className="repo-browser-logo-icon">
                 <LightningIcon />
               </div>
-              <span className="repo-browser-logo-text">Lawless AI</span>
+              <span className="repo-browser-logo-text">{branding.shortName}</span>
             </Link>
           </div>
 

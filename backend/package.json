@@ -1,7 +1,7 @@
 {
-  "name": "lawless-ai-backend",
+  "name": "ai-solution-architect-backend",
   "version": "1.0.0",
-  "description": "Oracle Cloud backend for Lawless AI - runs Claude CLI",
+  "description": "Backend server for AI Solution Architect - runs Claude CLI",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",

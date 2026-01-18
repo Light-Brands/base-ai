@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import { branding } from '../branding.config';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -14,10 +15,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Lawless AI - Solution Architect',
-  description: 'Your intelligent AI solution architect - bridging technical complexity and human understanding with clarity and precision',
+  title: `${branding.name} - ${branding.tagline}`,
+  description: branding.description,
   keywords: ['AI', 'solution architect', 'chat', 'code assistant', 'technical help'],
-  authors: [{ name: 'Lawless AI' }],
+  authors: [{ name: branding.name }],
 };
 
 export default function RootLayout({
@@ -29,13 +30,13 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <meta name="theme-color" content="#a855f7" />
+        <meta name="theme-color" content={branding.theme.primaryColor} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Lawless AI" />
-        <meta name="application-name" content="Lawless AI" />
+        <meta name="apple-mobile-web-app-title" content={branding.shortName} />
+        <meta name="application-name" content={branding.shortName} />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#8B5CF6" />
+        <meta name="msapplication-TileColor" content={branding.theme.tileColor} />
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />

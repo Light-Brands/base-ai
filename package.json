@@ -1,8 +1,8 @@
 {
-  "name": "lawless-ai-chat",
+  "name": "ai-solution-architect",
   "private": true,
   "version": "1.0.0",
-  "description": "Lawless AI Chat - A chat interface powered by Claude through CLI",
+  "description": "AI Solution Architect - A chat interface powered by Claude through CLI",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { branding } from '../../../branding.config';
 
 interface AuthStatus {
   authenticated: boolean;
@@ -291,7 +292,7 @@ export default function NewProjectPage() {
             <div className="new-project-logo-icon">
               <LightningIcon />
             </div>
-            <span className="new-project-logo-text">Lawless AI</span>
+            <span className="new-project-logo-text">{branding.shortName}</span>
           </Link>
 
           <nav className="new-project-nav">

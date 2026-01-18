@@ -4,7 +4,7 @@
 
 set -e
 
-echo "=== Lawless AI Backend Deployment ==="
+echo "=== AI Solution Architect Backend Deployment ==="
 echo ""
 
 # Colors for output
@@ -50,13 +50,13 @@ pm2 --version
 
 # Step 5: Setup application
 echo -e "${YELLOW}[5/7] Setting up application...${NC}"
-APP_DIR="$HOME/lawless-ai-backend"
+APP_DIR="$HOME/ai-architect-backend"
 
 if [ -d "$APP_DIR" ]; then
   cd "$APP_DIR"
   git pull origin main
 else
-  git clone https://github.com/Light-Brands/lawless-ai.git "$APP_DIR"
+  git clone https://github.com/your-org/your-repo.git "$APP_DIR"
   cd "$APP_DIR/backend"
 fi
 
@@ -87,8 +87,8 @@ fi
 
 # Step 7: Start with PM2
 echo -e "${YELLOW}[7/7] Starting application with PM2...${NC}"
-pm2 delete lawless-backend 2>/dev/null || true
-pm2 start dist/server.js --name lawless-backend
+pm2 delete ai-architect-backend 2>/dev/null || true
+pm2 start dist/server.js --name ai-architect-backend
 pm2 save
 
 # Setup PM2 to start on boot

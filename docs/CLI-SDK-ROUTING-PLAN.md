@@ -1,4 +1,4 @@
-# Lawless AI - CLI/SDK Routing Architecture Plan
+# AI Solution Architect - CLI/SDK Routing Architecture Plan
 
 > **Document Purpose**: Comprehensive analysis of options for running Claude CLI through the SDK, with architecture recommendations for local development, Vercel frontend + remote backend, and Oracle Cloud hosting.
 
@@ -48,7 +48,7 @@
 **Key Files:**
 - `app/api/chat/route.ts` - Spawns Claude CLI subprocess
 - `lib/conversations.ts` - In-memory conversation state
-- `lib/constants.ts` - System prompt (Lawless AI persona)
+- `lib/constants.ts` - System prompt (AI persona from branding config)
 - `app/page.tsx` - Frontend with SSE streaming
 
 ### Current Limitations
@@ -549,7 +549,7 @@ All within Oracle Always Free Tier.
 | **Load Balancer** | 1 flexible (10Mbps) | For HA setups |
 | **Bandwidth** | 10TB/month outbound | More than enough |
 
-### Recommended Allocation for Lawless AI
+### Recommended Allocation for AI Solution Architect
 
 **Option A (Simple):**
 ```
@@ -594,8 +594,8 @@ claude  # Follow prompts to authenticate
 sudo npm install -g pm2
 
 # 6. Clone your backend
-git clone https://github.com/your-repo/lawless-ai-backend.git
-cd lawless-ai-backend
+git clone https://github.com/your-org/your-repo.git
+cd your-repo/backend
 npm install
 npm run build
 
@@ -606,9 +606,9 @@ pm2 startup
 
 # 8. Setup Nginx
 sudo apt install -y nginx
-sudo nano /etc/nginx/sites-available/lawless-ai
+sudo nano /etc/nginx/sites-available/ai-architect
 # (add reverse proxy config)
-sudo ln -s /etc/nginx/sites-available/lawless-ai /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/ai-architect /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 # 9. SSL with Certbot
@@ -654,8 +654,8 @@ Oracle reclaims instances with <20% CPU over 7 days. Add a keep-alive cron:
 
 ```bash
 # Clone the repo
-git clone https://github.com/Light-Brands/lawless-ai.git
-cd lawless-ai
+git clone https://github.com/your-org/your-repo.git
+cd your-repo
 
 # Install dependencies
 npm install
