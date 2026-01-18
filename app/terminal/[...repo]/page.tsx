@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import '@xterm/xterm/css/xterm.css';
 
 // Dynamically import xterm to avoid SSR issues
 let Terminal: any;
@@ -105,9 +106,6 @@ export default function TerminalPage() {
       Terminal = xtermModule.Terminal;
       FitAddon = fitModule.FitAddon;
       WebLinksAddon = webLinksModule.WebLinksAddon;
-
-      // Import CSS
-      await import('@xterm/xterm/css/xterm.css');
 
       if (!mounted) return;
 
