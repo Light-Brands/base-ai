@@ -4,16 +4,6 @@ export const runtime = 'nodejs';
 
 const AI_CODING_CONFIG_REPO = 'TechNickAI/ai-coding-config';
 
-// Directories/files to copy from ai-coding-config to new projects
-const AI_CONFIG_PATHS = [
-  '.cursor',
-  '.claude', 
-  'AGENTS.md',
-  'CLAUDE.md',
-  '.prettierrc',
-  '.prettierignore',
-];
-
 // Fetch file contents from GitHub
 async function fetchGitHubFile(repo: string, path: string, token: string): Promise<string | null> {
   try {
@@ -32,31 +22,48 @@ async function fetchGitHubFile(repo: string, path: string, token: string): Promi
   return null;
 }
 
+// Paths to skip when cloning ai-coding-config (not needed in new projects)
+const SKIP_PATHS = [
+  '.git',
+  '.github',
+  'docs',
+  'scripts',
+  'LICENSE',
+  'README.md',
+  'implementation-plan.md',
+];
+
 // Recursively fetch directory contents from GitHub
 async function fetchGitHubDirectory(
-  repo: string, 
-  dirPath: string, 
+  repo: string,
+  dirPath: string,
   token: string
 ): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
-  
+
   try {
-    const response = await fetch(`https://api.github.com/repos/${repo}/contents/${dirPath}`, {
+    const apiPath = dirPath ? `contents/${dirPath}` : 'contents';
+    const response = await fetch(`https://api.github.com/repos/${repo}/${apiPath}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github.v3+json',
       },
     });
-    
+
     if (!response.ok) return files;
-    
+
     const contents = await response.json();
-    
+
     for (const item of contents) {
+      // Skip paths we don't want to copy
+      if (SKIP_PATHS.some(skip => item.path === skip || item.path.startsWith(skip + '/'))) {
+        continue;
+      }
+
       if (item.type === 'file') {
         // Skip symlinks and large files
-        if (item.type === 'symlink' || item.size > 100000) continue;
-        
+        if (item.size > 100000) continue;
+
         const content = await fetchGitHubFile(repo, item.path, token);
         if (content) {
           files[item.path] = content;
@@ -70,40 +77,14 @@ async function fetchGitHubDirectory(
   } catch (error) {
     console.error(`Error fetching directory ${dirPath}:`, error);
   }
-  
+
   return files;
 }
 
-// Fetch all ai-coding-config files from GitHub
+// Fetch ALL files from ai-coding-config repo (entire clone)
 async function fetchAiCodingConfig(token: string): Promise<Record<string, string>> {
-  const allFiles: Record<string, string> = {};
-  
-  for (const configPath of AI_CONFIG_PATHS) {
-    // Check if it's a file or directory
-    const response = await fetch(`https://api.github.com/repos/${AI_CODING_CONFIG_REPO}/contents/${configPath}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    });
-    
-    if (!response.ok) continue;
-    
-    const content = await response.json();
-    
-    if (Array.isArray(content)) {
-      // It's a directory
-      const dirFiles = await fetchGitHubDirectory(AI_CODING_CONFIG_REPO, configPath, token);
-      Object.assign(allFiles, dirFiles);
-    } else if (content.type === 'file') {
-      // It's a file
-      const fileContent = await fetchGitHubFile(AI_CODING_CONFIG_REPO, configPath, token);
-      if (fileContent) {
-        allFiles[configPath] = fileContent;
-      }
-    }
-  }
-  
+  // Fetch everything from the root of the repo
+  const allFiles = await fetchGitHubDirectory(AI_CODING_CONFIG_REPO, '', token);
   return allFiles;
 }
 
